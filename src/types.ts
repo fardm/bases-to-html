@@ -81,8 +81,6 @@ export interface ExportOptions {
 	exportScope: ExportScope;
 	font: string;
 	customCss: string;
-	customCssScope: 'global' | 'per-base';
-	perBaseCss?: Record<string, string>;
 	outputLocation: string;
 	openExportedFiles: boolean;
 }

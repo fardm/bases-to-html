@@ -45,3 +45,56 @@
   gap: 0.75rem;
   margin-top: 1.5rem;
 }
+
+.b2h-custom-css-section {
+  margin: 1.25rem 0;
+  border-top: 1px solid var(--background-modifier-border);
+  padding-top: 1rem;
+}
+
+.b2h-css-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.b2h-css-title-group {
+  flex: 1;
+}
+
+.b2h-css-source-badge {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--background-secondary-alt);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, 4px);
+  padding: 0.2rem 0.5rem;
+  white-space: nowrap;
+}
+
+.b2h-css-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.b2h-hidden-input {
+  display: none;
+}
+
+.b2h-custom-css-textarea {
+  width: 100%;
+  min-height: 110px;
+  font-family: var(--font-monospace);
+  font-size: 0.85rem;
+  resize: vertical;
+  padding: 0.5rem;
+  border-radius: var(--radius-s, 4px);
+  border: 1px solid var(--background-modifier-border);
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+}

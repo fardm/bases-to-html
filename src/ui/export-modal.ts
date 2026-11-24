@@ -1,7 +1,29 @@
-import { App, Modal, Notice, Setting, TFile } from 'obsidian';
+import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile } from 'obsidian';
 import { Exporter } from '../generator/exporter';
 import type BasesToHtmlPlugin from '../main';
 import { ExportFormat, ExportOptions, ExportScope } from '../types';
+
+class VaultCssPickerModal extends FuzzySuggestModal<TFile> {
+	private onSelect: (file: TFile) => void;
+
+	constructor(app: App, onSelect: (file: TFile) => void) {
+		super(app);
+		this.onSelect = onSelect;
+		this.setPlaceholder('Select a CSS file from your vault...');
+	}
+
+	getItems(): TFile[] {
+		return this.app.vault.getFiles().filter((f) => f.extension === 'css');
+	}
+
+	getItemText(item: TFile): string {
+		return item.path;
+	}
+
+	onChooseItem(item: TFile): void {
+		this.onSelect(item);
+	}
+}
 
 export class ExportModal extends Modal {
 	private plugin: BasesToHtmlPlugin;
@@ -12,8 +34,7 @@ export class ExportModal extends Modal {
 	private exportScope: ExportScope;
 	private font: string;
 	private customCss: string;
-	private customCssScope: 'global' | 'per-base';
-	private perBaseCss: Record<string, string> = {};
+	private cssSource: string;
 	private outputLocation: string;
 	private openExportedFiles: boolean;
 
@@ -27,7 +48,7 @@ export class ExportModal extends Modal {
 		this.exportScope = defaults.defaultScope || 'all';
 		this.font = defaults.defaultFont || 'vazirmatn';
 		this.customCss = defaults.customCss || '';
-		this.customCssScope = defaults.customCssScope || 'global';
+		this.cssSource = this.customCss.trim() ? 'Default settings' : 'None';
 		this.outputLocation = defaults.defaultOutputFolder || '';
 		this.openExportedFiles = defaults.openAfterExport ?? true;
 	}
@@ -198,31 +219,120 @@ export class ExportModal extends Modal {
 					}),
 			);
 
-		// 3.6 Custom CSS
-		new Setting(contentEl)
-			.setName('Custom CSS scope')
-			.setDesc('Apply custom styles across all bases or individually per base.')
-			.addDropdown((drop) =>
-				drop
-					.addOption('global', 'Global (apply to all)')
-					.addOption('per-base', 'Per-base (specific per base file)')
-					.setValue(this.customCssScope)
-					.onChange((val) => {
-						this.customCssScope = val as 'global' | 'per-base';
-					}),
-			);
+		// 3.6 Custom CSS section
+		const customCssSection = contentEl.createDiv({
+			cls: 'b2h-custom-css-section',
+		});
 
-		new Setting(contentEl)
-			.setName('Custom CSS code')
-			.setDesc('Paste or edit custom CSS styles for the exported pages.')
-			.addTextArea((text) =>
-				text
-					.setValue(this.customCss)
-					.setPlaceholder('/* .base-card { border-radius: 20px; } */')
-					.onChange((val) => {
-						this.customCss = val;
-					}),
-			);
+		const cssHeader = customCssSection.createDiv({
+			cls: 'b2h-css-header',
+		});
+
+		const cssTitleGroup = cssHeader.createDiv({ cls: 'b2h-css-title-group' });
+		cssTitleGroup.createDiv({
+			text: 'Custom CSS',
+			cls: 'setting-item-name',
+		});
+		cssTitleGroup.createDiv({
+			text: 'Enter custom styles or select a stylesheet from your vault or local storage.',
+			cls: 'setting-item-description',
+		});
+
+		const cssSourceIndicator = cssHeader.createDiv({
+			cls: 'b2h-css-source-badge',
+		});
+
+		const updateSourceBadge = () => {
+			cssSourceIndicator.setText(`Source: ${this.cssSource}`);
+		};
+		updateSourceBadge();
+
+		const cssControlsRow = customCssSection.createDiv({
+			cls: 'b2h-css-controls-row',
+		});
+
+		// Hidden file input for disk CSS selection
+		const diskFileInput = cssControlsRow.createEl('input', {
+			type: 'file',
+			cls: 'b2h-hidden-input',
+		});
+		diskFileInput.accept = '.css';
+		diskFileInput.addEventListener('change', () => {
+			const file = diskFileInput.files?.[0];
+			if (!file) return;
+
+			const reader = new FileReader();
+			reader.onload = () => {
+				const content = typeof reader.result === 'string' ? reader.result : '';
+				this.customCss = content;
+				this.cssSource = `Disk: ${file.name}`;
+				cssTextarea.value = this.customCss;
+				updateSourceBadge();
+				new Notice(`Loaded ${file.name}`);
+			};
+			reader.onerror = () => {
+				new Notice('Failed to read CSS file from disk.');
+			};
+			reader.readAsText(file);
+			// Reset input value so the same file can be re-selected if needed
+			diskFileInput.value = '';
+		});
+
+		const fromVaultBtn = cssControlsRow.createEl('button', {
+			text: 'Select from vault',
+		});
+		fromVaultBtn.addEventListener('click', () => {
+			const cssFiles = this.app.vault
+				.getFiles()
+				.filter((f) => f.extension === 'css');
+			if (cssFiles.length === 0) {
+				new Notice('No CSS files found in vault.');
+				return;
+			}
+
+			new VaultCssPickerModal(this.app, (file: TFile) => {
+				void (async () => {
+					try {
+						const content = await this.app.vault.read(file);
+						this.customCss = content;
+						this.cssSource = `Vault: ${file.path}`;
+						cssTextarea.value = this.customCss;
+						updateSourceBadge();
+						new Notice(`Loaded ${file.name}`);
+					} catch {
+						new Notice('Failed to read CSS file from vault.');
+					}
+				})();
+			}).open();
+		});
+
+		const fromDiskBtn = cssControlsRow.createEl('button', {
+			text: 'Select from disk',
+		});
+		fromDiskBtn.addEventListener('click', () => {
+			diskFileInput.click();
+		});
+
+		const clearBtn = cssControlsRow.createEl('button', {
+			text: 'Clear',
+		});
+		clearBtn.addEventListener('click', () => {
+			this.customCss = '';
+			this.cssSource = 'None';
+			cssTextarea.value = '';
+			updateSourceBadge();
+		});
+
+		const cssTextarea = customCssSection.createEl('textarea', {
+			cls: 'b2h-custom-css-textarea',
+		});
+		cssTextarea.placeholder = '/* enter or paste custom CSS rules */';
+		cssTextarea.value = this.customCss;
+		cssTextarea.addEventListener('input', () => {
+			this.customCss = cssTextarea.value;
+			this.cssSource = this.customCss.trim() ? 'Direct input' : 'None';
+			updateSourceBadge();
+		});
 
 		// 3.7 Output location
 		new Setting(contentEl)
@@ -282,8 +392,6 @@ export class ExportModal extends Modal {
 			exportScope: this.exportScope,
 			font: this.font,
 			customCss: this.customCss,
-			customCssScope: this.customCssScope,
-			perBaseCss: this.perBaseCss,
 			outputLocation: this.outputLocation,
 			openExportedFiles: this.openExportedFiles,
 		};

@@ -10,7 +10,6 @@ export interface BasesToHtmlSettings {
 	defaultOutputFolder: string;
 	openAfterExport: boolean;
 	customCss: string;
-	customCssScope: 'global' | 'per-base';
 }
 
 export const DEFAULT_SETTINGS: BasesToHtmlSettings = {
@@ -21,7 +20,6 @@ export const DEFAULT_SETTINGS: BasesToHtmlSettings = {
 	defaultOutputFolder: '',
 	openAfterExport: true,
 	customCss: '',
-	customCssScope: 'global',
 };
 
 export class BasesToHtmlSettingTab extends PluginSettingTab {

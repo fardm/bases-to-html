@@ -4,181 +4,165 @@ import { getClientCss } from './client-style';
 import { getLucideSpriteSvg, renderIconSvg } from './icons';
 
 export interface GeneratedFile {
-	relativePath: string;
-	content: string;
+  relativePath: string;
+  content: string;
 }
 
 export class HtmlBuilder {
-	private options: ExportOptions;
+  private options: ExportOptions;
 
-	constructor(options: ExportOptions) {
-		this.options = options;
-	}
+  constructor(options: ExportOptions) {
+    this.options = options;
+  }
 
-	buildSinglePage(baseConfig: BaseFileConfig, items: NoteItem[]): string {
-		const customCss = this.resolveCustomCss(baseConfig.filePath);
-		const css = getClientCss(customCss);
-		const js = getClientScript();
+  buildSinglePage(baseConfig: BaseFileConfig, items: NoteItem[]): string {
+    const customCss = this.options.customCss || '';
+    const css = getClientCss(customCss);
+    const js = getClientScript();
 
-		return this.generateBaseHtmlDocument({
-			title: this.options.documentTitle || baseConfig.baseTitle,
-			baseConfig,
-			items,
-			cssInline: css,
-			jsInline: js,
-			rootHref: '#',
-		});
-	}
+    return this.generateBaseHtmlDocument({
+      title: this.options.documentTitle || baseConfig.baseTitle,
+      baseConfig,
+      items,
+      cssInline: css,
+      jsInline: js,
+      rootHref: '#',
+    });
+  }
 
-	buildMultiFile(
-		exportedBases: Array<{ config: BaseFileConfig; items: NoteItem[] }>,
-	): GeneratedFile[] {
-		const files: GeneratedFile[] = [];
-		const isSingleBase = exportedBases.length === 1;
+  buildMultiFile(
+    exportedBases: Array<{ config: BaseFileConfig; items: NoteItem[] }>,
+  ): GeneratedFile[] {
+    const files: GeneratedFile[] = [];
+    const isSingleBase = exportedBases.length === 1;
 
-		// Shared CSS and JS
-		const globalCss = getClientCss(
-			this.options.customCssScope === 'global' ? this.options.customCss : '',
-		);
-		files.push({
-			relativePath: 'assets/css/styles.css',
-			content: globalCss,
-		});
+    // Shared CSS and JS
+    const globalCss = getClientCss(this.options.customCss || '');
+    files.push({
+      relativePath: 'assets/css/styles.css',
+      content: globalCss,
+    });
 
-		const clientJs = getClientScript();
-		files.push({
-			relativePath: 'assets/js/app.js',
-			content: clientJs,
-		});
+    const clientJs = getClientScript();
+    files.push({
+      relativePath: 'assets/js/app.js',
+      content: clientJs,
+    });
 
-		if (isSingleBase) {
-			const firstBase = exportedBases[0];
-			if (!firstBase) return files;
+    if (isSingleBase) {
+      const firstBase = exportedBases[0];
+      if (!firstBase) return files;
 
-			const { config, items } = firstBase;
-			const customCss = this.resolveCustomCss(config.filePath);
-			const baseHtml = this.generateBaseHtmlDocument({
-				title: this.options.documentTitle || config.baseTitle,
-				baseConfig: config,
-				items,
-				cssRef: 'assets/css/styles.css',
-				jsRef: 'assets/js/app.js',
-				extraCss: customCss,
-				rootHref: 'index.html',
-			});
+      const { config, items } = firstBase;
+      const baseHtml = this.generateBaseHtmlDocument({
+        title: this.options.documentTitle || config.baseTitle,
+        baseConfig: config,
+        items,
+        cssRef: 'assets/css/styles.css',
+        jsRef: 'assets/js/app.js',
+        rootHref: 'index.html',
+      });
 
-			files.push({
-				relativePath: 'index.html',
-				content: baseHtml,
-			});
-		} else {
-			// Generate Directory index.html
-			const indexHtml = this.generateIndexDirectoryHtml(exportedBases);
-			files.push({
-				relativePath: 'index.html',
-				content: indexHtml,
-			});
+      files.push({
+        relativePath: 'index.html',
+        content: baseHtml,
+      });
+    } else {
+      // Generate Directory index.html
+      const indexHtml = this.generateIndexDirectoryHtml(exportedBases);
+      files.push({
+        relativePath: 'index.html',
+        content: indexHtml,
+      });
 
-			// Generate each Base HTML
-			for (const { config, items } of exportedBases) {
-				const slug = sanitizeSlug(config.fileName);
-				const customCss = this.resolveCustomCss(config.filePath);
-				const baseHtml = this.generateBaseHtmlDocument({
-					title: `${config.baseTitle} - ${this.options.documentTitle}`,
-					baseConfig: config,
-					items,
-					cssRef: 'assets/css/styles.css',
-					jsRef: 'assets/js/app.js',
-					extraCss: customCss,
-					rootHref: 'index.html',
-				});
+      // Generate each Base HTML
+      for (const { config, items } of exportedBases) {
+        const slug = sanitizeSlug(config.fileName);
+        const baseHtml = this.generateBaseHtmlDocument({
+          title: `${config.baseTitle} - ${this.options.documentTitle}`,
+          baseConfig: config,
+          items,
+          cssRef: 'assets/css/styles.css',
+          jsRef: 'assets/js/app.js',
+          rootHref: 'index.html',
+        });
 
-				files.push({
-					relativePath: `${slug}.html`,
-					content: baseHtml,
-				});
-			}
-		}
+        files.push({
+          relativePath: `${slug}.html`,
+          content: baseHtml,
+        });
+      }
+    }
 
-		return files;
-	}
+    return files;
+  }
 
-	private resolveCustomCss(filePath: string): string {
-		if (this.options.customCssScope === 'per-base') {
-			if (this.options.perBaseCss && this.options.perBaseCss[filePath]) {
-				return this.options.perBaseCss[filePath];
-			}
-			return '';
-		}
-		return this.options.customCss || '';
-	}
+  private generateBaseHtmlDocument(params: {
+    title: string;
+    baseConfig: BaseFileConfig;
+    items: NoteItem[];
+    cssInline?: string;
+    jsInline?: string;
+    cssRef?: string;
+    jsRef?: string;
+    extraCss?: string;
+    rootHref?: string;
+  }): string {
+    const {
+      title,
+      baseConfig,
+      items,
+      cssInline,
+      jsInline,
+      cssRef,
+      jsRef,
+      extraCss,
+      rootHref = 'index.html',
+    } = params;
 
-	private generateBaseHtmlDocument(params: {
-		title: string;
-		baseConfig: BaseFileConfig;
-		items: NoteItem[];
-		cssInline?: string;
-		jsInline?: string;
-		cssRef?: string;
-		jsRef?: string;
-		extraCss?: string;
-		rootHref?: string;
-	}): string {
-		const {
-			title,
-			baseConfig,
-			items,
-			cssInline,
-			jsInline,
-			cssRef,
-			jsRef,
-			extraCss,
-			rootHref = 'index.html',
-		} = params;
+    const viewsOptionsHtml = baseConfig.views
+      .map(
+        (v, idx) =>
+          `<option value="${idx}">${escapeHtml(v.name || `View ${idx + 1}`)}</option>`,
+      )
+      .join('\n');
 
-		const viewsOptionsHtml = baseConfig.views
-			.map(
-				(v, idx) =>
-					`<option value="${idx}">${escapeHtml(v.name || `View ${idx + 1}`)}</option>`,
-			)
-			.join('\n');
+    const basePayload = {
+      base: {
+        title: baseConfig.fileName,
+        formulas: baseConfig.formulas,
+        views: baseConfig.views,
+        propertyTypes: baseConfig.propertyTypes || {},
+      },
+      items,
+    };
 
-		const basePayload = {
-			base: {
-				title: baseConfig.fileName,
-				formulas: baseConfig.formulas,
-				views: baseConfig.views,
-				propertyTypes: baseConfig.propertyTypes || {},
-			},
-			items,
-		};
-
-		const fontLink = `<link rel="preconnect" href="https://fonts.googleapis.com">
+    const fontLink = `<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">`;
 
-		const cssInclude = cssRef
-			? `<link rel="stylesheet" href="${cssRef}">`
-			: `<style>\n${cssInline || ''}\n</style>`;
+    const cssInclude = cssRef
+      ? `<link rel="stylesheet" href="${cssRef}">`
+      : `<style>\n${cssInline || ''}\n</style>`;
 
-		const extraCssInclude = extraCss
-			? `<style>\n/* Per-base custom CSS */\n${extraCss}\n</style>`
-			: '';
+    const extraCssInclude = extraCss
+      ? `<style>\n/* Per-base custom CSS */\n${extraCss}\n</style>`
+      : '';
 
-		const jsInclude = jsRef
-			? `<script src="${jsRef}"></script>`
-			: `<script>\n${jsInline || ''}\n</script>`;
+    const jsInclude = jsRef
+      ? `<script src="${jsRef}"></script>`
+      : `<script>\n${jsInline || ''}\n</script>`;
 
-		const firstView = baseConfig.views[0];
-		const initCardSize = firstView?.cardSize || 180;
-		const initRawRatio =
-			typeof firstView?.imageAspectRatio === 'number' && firstView.imageAspectRatio > 0
-				? firstView.imageAspectRatio
-				: 1.5;
-		const initCssRatio = 1 / initRawRatio;
-		const initImageFit = firstView?.imageFit || 'cover';
+    const firstView = baseConfig.views[0];
+    const initCardSize = firstView?.cardSize || 180;
+    const initRawRatio =
+      typeof firstView?.imageAspectRatio === 'number' && firstView.imageAspectRatio > 0
+        ? firstView.imageAspectRatio
+        : 1.5;
+    const initCssRatio = 1 / initRawRatio;
+    const initImageFit = firstView?.imageFit || 'cover';
 
-		return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="en" data-theme="dark" data-width="normal" data-font="${this.options.font || 'vazirmatn'}" style="--card-size: ${initCardSize}px; --aspect-ratio: ${initRawRatio}; --css-aspect-ratio: ${initCssRatio}; --image-fit: ${initImageFit};">
 <head>
   <meta charset="UTF-8">
@@ -199,15 +183,14 @@ export class HtmlBuilder {
           ${renderIconSvg('folder')}
           <span>${escapeHtml(this.options.documentTitle || baseConfig.baseTitle)}</span>
         </a>
-        ${
-					baseConfig.views.length > 1
-						? `<div class="view-selector-wrapper">
+        ${baseConfig.views.length > 1
+        ? `<div class="view-selector-wrapper">
           <select id="viewSelect" class="view-select">
             ${viewsOptionsHtml}
           </select>
         </div>`
-						: ''
-				}
+        : ''
+      }
       </div>
 
       <div class="nav-controls">
@@ -352,20 +335,20 @@ export class HtmlBuilder {
   ${jsInclude}
 </body>
 </html>`;
-	}
+  }
 
-	private generateIndexDirectoryHtml(
-		exportedBases: Array<{ config: BaseFileConfig; items: NoteItem[] }>,
-	): string {
-		const title = this.options.documentTitle || 'Bases Archive';
-		const font = this.options.font || 'vazirmatn';
+  private generateIndexDirectoryHtml(
+    exportedBases: Array<{ config: BaseFileConfig; items: NoteItem[] }>,
+  ): string {
+    const title = this.options.documentTitle || 'Bases Archive';
+    const font = this.options.font || 'vazirmatn';
 
-		const cardsHtml = exportedBases
-			.map(({ config, items }) => {
-				const slug = sanitizeSlug(config.fileName);
-				const viewsCount = config.views.length;
-				const itemsCount = items.length;
-				return `<a href="${slug}.html" class="base-directory-card">
+    const cardsHtml = exportedBases
+      .map(({ config, items }) => {
+        const slug = sanitizeSlug(config.fileName);
+        const viewsCount = config.views.length;
+        const itemsCount = items.length;
+        return `<a href="${slug}.html" class="base-directory-card">
         <div class="directory-card-icon">${renderIconSvg('book-open', 'b2h-icon-xl')}</div>
         <div class="directory-card-content">
           <h3 class="directory-card-title">${escapeHtml(config.baseTitle)}</h3>
@@ -376,10 +359,10 @@ export class HtmlBuilder {
           </div>
         </div>
       </a>`;
-			})
-			.join('\n');
+      })
+      .join('\n');
 
-		return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="en" data-theme="dark" data-width="normal" data-font="${font}">
 <head>
   <meta charset="UTF-8">
@@ -466,23 +449,23 @@ export class HtmlBuilder {
   </footer>
 </body>
 </html>`;
-	}
+  }
 }
 
 function sanitizeSlug(name: string): string {
-	return (
-		name
-			.toLowerCase()
-			.replace(/[\s/\\?%*:|"<>]+/g, '-')
-			.replace(/^-+|-+$/g, '') || 'base'
-	);
+  return (
+    name
+      .toLowerCase()
+      .replace(/[\s/\\?%*:|"<>]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'base'
+  );
 }
 
 function escapeHtml(str: string): string {
-	return String(str)
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-		.replace(/"/g, '&quot;')
-		.replace(/'/g, '&#039;');
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
