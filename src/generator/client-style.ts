@@ -726,6 +726,206 @@ body {
   margin-bottom: 0.5rem;
 }
 
+/* ========================================================================= */
+/* Table View (Obsidian Bases Table & Summaries)                             */
+/* ========================================================================= */
+
+.bases-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 2rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.bases-table-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.bases-table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.bases-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.88rem;
+  text-align: left;
+}
+
+.bases-thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--bg-secondary);
+}
+
+.bases-th {
+  padding: 0.65rem 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  user-select: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.bases-th:last-child {
+  border-right: none;
+}
+
+.bases-th:hover {
+  background-color: var(--bg-pill-hover);
+  color: var(--text-primary);
+}
+
+.th-content {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.th-icon {
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+}
+
+.th-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.th-sort-icon {
+  color: var(--interactive-accent);
+  display: inline-flex;
+  align-items: center;
+}
+
+.bases-tbody .bases-tr {
+  transition: background-color var(--transition-fast);
+}
+
+.bases-tbody .bases-tr:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.bases-td {
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  color: var(--text-primary);
+  vertical-align: middle;
+  font-size: 0.86rem;
+}
+
+.bases-tbody .bases-tr:last-child .bases-td {
+  border-bottom: none;
+}
+
+.bases-td:last-child {
+  border-right: none;
+}
+
+.table-cell-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.table-cell-title:hover {
+  color: var(--interactive-accent);
+  text-decoration: underline;
+}
+
+.bases-tag-pill {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  background-color: var(--bg-pill);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  margin-right: 0.25rem;
+  margin-bottom: 0.25rem;
+  border: 1px solid var(--border-color);
+}
+
+.table-bool-checked {
+  color: #22c55e;
+  display: inline-flex;
+  align-items: center;
+}
+
+.table-bool-unchecked {
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+}
+
+.bases-tfoot {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background-color: var(--bg-secondary);
+}
+
+.bases-summary-row {
+  border-top: 2px solid var(--border-color);
+}
+
+.bases-summary-cell {
+  padding: 0.6rem 0.85rem;
+  border-top: 2px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+  font-size: 0.82rem;
+}
+
+.bases-summary-cell:last-child {
+  border-right: none;
+}
+
+.summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.summary-type-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.summary-result-value {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.bases-table-group-section {
+  margin-bottom: 2rem;
+}
+
 /* Settings Sidebar */
 .settings-drawer {
   position: fixed;

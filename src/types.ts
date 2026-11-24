@@ -48,6 +48,8 @@ export interface BaseViewConfig {
 	cardSize?: number;
 	imageAspectRatio?: number;
 	imageFit?: string;
+	columnSize?: Record<string, number>;
+	summaries?: Record<string, string>;
 	[key: string]: unknown;
 }
 
@@ -57,6 +59,7 @@ export interface BaseFileConfig {
 	fileName: string;
 	baseTitle: string;
 	formulas?: Record<string, string>;
+	summaries?: Record<string, string>;
 	views: BaseViewConfig[];
 	propertyTypes?: Record<string, PropertyMetadata>;
 }

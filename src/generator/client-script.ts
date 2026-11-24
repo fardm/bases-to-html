@@ -413,8 +413,21 @@ export function getClientScript(): string {
       try { activeOrder = JSON.parse(savedOrder) || []; } catch (e) { activeOrder = []; }
     } else if (Array.isArray(view.order) && view.order.length > 0) {
       activeOrder = view.order.slice();
+    } else if (view.type === 'table') {
+      activeOrder = getAllAvailablePropertyKeys();
     } else {
       activeOrder = ['file.name', 'rating'];
+    }
+
+    if (propertiesToggleBtn) {
+      var propSpan = propertiesToggleBtn.querySelector('span');
+      if (propSpan) {
+        propSpan.textContent = view.type === 'table' ? 'Columns' : 'Properties';
+      }
+    }
+    var propPopoverHeader = document.querySelector('#propertiesPopover .popover-header');
+    if (propPopoverHeader) {
+      propPopoverHeader.textContent = view.type === 'table' ? 'Table columns' : 'Card properties';
     }
 
     searchQuery = '';
@@ -1227,6 +1240,15 @@ export function getClientScript(): string {
       return;
     }
 
+    var viewType = (view.type || 'cards').toLowerCase();
+    if (viewType === 'table') {
+      renderTableView(contentContainer, filtered, view);
+    } else {
+      renderGalleryCards(contentContainer, filtered, view);
+    }
+  }
+
+  function renderGalleryCards(contentContainer, filtered, view) {
     // Grouping
     if (activeGroupRule && activeGroupRule.property) {
       var groupProp = activeGroupRule.property;
@@ -1275,6 +1297,484 @@ export function getClientScript(): string {
       });
       contentContainer.appendChild(grid);
     }
+  }
+
+  // =========================================================================
+  // Table View & Summarize Engine
+  // =========================================================================
+
+  function renderTableView(container, itemsList, view) {
+    var cols = (activeOrder && activeOrder.length > 0) ? activeOrder : getAllAvailablePropertyKeys();
+    if (cols.length === 0) cols = ['file.name'];
+
+    var viewSummaries = view.summaries || {};
+    var colSizes = view.columnSize || {};
+
+    if (activeGroupRule && activeGroupRule.property) {
+      var groupProp = activeGroupRule.property;
+      var isGroupAsc = activeGroupRule.direction.toUpperCase() === 'ASC';
+
+      var groups = new Map();
+      itemsList.forEach(function(it) {
+        var keyVal = getItemValue(it, groupProp);
+        var keyStr = (keyVal === undefined || keyVal === null || keyVal === '') ? 'Uncategorized' : String(keyVal);
+        if (!groups.has(keyStr)) groups.set(keyStr, []);
+        groups.get(keyStr).push(it);
+      });
+
+      var sortedKeys = Array.from(groups.keys()).sort(function(a, b) {
+        if (a === 'Uncategorized') return 1;
+        if (b === 'Uncategorized') return -1;
+        return compareValuesClient(a, b, isGroupAsc);
+      });
+
+      sortedKeys.forEach(function(grpKey) {
+        var grpItems = groups.get(grpKey);
+        if (!grpItems) return;
+
+        var grpSection = document.createElement('section');
+        grpSection.className = 'group-section bases-group bases-table-group-section';
+        grpSection.setAttribute('data-group-value', grpKey);
+
+        var grpHeader = document.createElement('div');
+        grpHeader.className = 'group-header bases-group-header';
+        grpHeader.innerHTML = '<span class="group-title bases-group-title">' + escapeHtml(grpKey) + '</span><span class="group-count bases-group-count">' + grpItems.length + '</span>';
+        grpSection.appendChild(grpHeader);
+
+        var tableWrapper = createTableElement(grpItems, cols, colSizes, viewSummaries, true);
+        grpSection.appendChild(tableWrapper);
+
+        container.appendChild(grpSection);
+      });
+
+      // Overall grand summary if multiple groups exist and summaries are configured
+      if (sortedKeys.length > 1 && hasAnySummaries(cols, viewSummaries)) {
+        var grandSummarySection = document.createElement('div');
+        grandSummarySection.className = 'bases-table-wrapper bases-grand-summary-wrapper';
+        var grandTable = document.createElement('table');
+        grandTable.className = 'bases-table';
+        var grandFoot = createTableSummaryFoot(itemsList, cols, colSizes, viewSummaries, 'Grand Total');
+        grandTable.appendChild(grandFoot);
+        grandSummarySection.appendChild(grandTable);
+        container.appendChild(grandSummarySection);
+      }
+    } else {
+      var tableWrapper = createTableElement(itemsList, cols, colSizes, viewSummaries, false);
+      container.appendChild(tableWrapper);
+    }
+  }
+
+  function createTableElement(itemsList, cols, colSizes, viewSummaries, isGrouped) {
+    var wrapper = document.createElement('div');
+    wrapper.className = 'bases-table-wrapper';
+
+    var table = document.createElement('table');
+    table.className = 'bases-table';
+
+    // 1. Table Header (thead)
+    var thead = document.createElement('thead');
+    thead.className = 'bases-thead';
+    var headerRow = document.createElement('tr');
+    headerRow.className = 'bases-tr bases-th-row';
+
+    cols.forEach(function(col) {
+      var th = document.createElement('th');
+      th.className = 'bases-th';
+      th.setAttribute('data-column', col);
+
+      var width = getColumnWidth(col, colSizes);
+      if (width) {
+        th.style.width = width + 'px';
+        th.style.minWidth = width + 'px';
+      }
+
+      var thContent = document.createElement('div');
+      thContent.className = 'th-content';
+
+      var meta = getPropertyMetadata(col);
+      var iconSpan = document.createElement('span');
+      iconSpan.className = 'th-icon';
+      iconSpan.appendChild(createIconSvg(meta.icon || 'type', 'b2h-icon-xs'));
+      thContent.appendChild(iconSpan);
+
+      var nameSpan = document.createElement('span');
+      nameSpan.className = 'th-name';
+      nameSpan.textContent = getPropertyDisplayName(col);
+      nameSpan.setAttribute('dir', 'auto');
+      thContent.appendChild(nameSpan);
+
+      // Sort indicator
+      var sortRule = activeSortRules.find(function(s) { return s.property === col; });
+      if (sortRule) {
+        var sortIconSpan = document.createElement('span');
+        sortIconSpan.className = 'th-sort-icon';
+        var isAsc = sortRule.direction.toUpperCase() === 'ASC';
+        sortIconSpan.appendChild(createIconSvg(isAsc ? 'arrow-up' : 'arrow-down', 'b2h-icon-xs'));
+        thContent.appendChild(sortIconSpan);
+      }
+
+      th.appendChild(thContent);
+
+      // Interactive Column Header Sorting
+      th.addEventListener('click', function() {
+        toggleColumnSort(col);
+      });
+
+      headerRow.appendChild(th);
+    });
+
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // 2. Table Body (tbody)
+    var tbody = document.createElement('tbody');
+    tbody.className = 'bases-tbody';
+
+    itemsList.forEach(function(item) {
+      var tr = document.createElement('tr');
+      tr.className = 'bases-tr';
+      if (item.id) tr.setAttribute('data-item-id', item.id);
+
+      cols.forEach(function(col) {
+        var td = document.createElement('td');
+        td.className = 'bases-td';
+        td.setAttribute('data-column', col);
+
+        var val = getItemValue(item, col);
+        var meta = getPropertyMetadata(col);
+
+        if (col === 'file.name' || col === 'name' || col === 'file') {
+          var titleLink = document.createElement('a');
+          titleLink.className = 'table-cell-title';
+          titleLink.href = 'javascript:void(0);';
+          titleLink.appendChild(createIconSvg('file-text', 'b2h-icon-xs'));
+          var titleText = document.createElement('span');
+          titleText.textContent = item.title;
+          titleText.setAttribute('dir', 'auto');
+          titleLink.appendChild(titleText);
+          titleLink.addEventListener('click', function(ev) {
+            ev.preventDefault();
+            openNoteModal(item);
+          });
+          td.appendChild(titleLink);
+        } else if (meta.type === 'checkbox' || typeof val === 'boolean') {
+          var boolSpan = document.createElement('span');
+          boolSpan.className = val ? 'table-bool-checked' : 'table-bool-unchecked';
+          boolSpan.appendChild(createIconSvg(val ? 'check' : 'x', 'b2h-icon-xs'));
+          td.appendChild(boolSpan);
+        } else if (meta.type === 'list' || Array.isArray(val)) {
+          var arr = Array.isArray(val) ? val : (val ? [String(val)] : []);
+          arr.forEach(function(tagItem) {
+            var tagPill = document.createElement('span');
+            tagPill.className = 'bases-tag-pill';
+            tagPill.textContent = String(tagItem);
+            tagPill.setAttribute('dir', 'auto');
+            td.appendChild(tagPill);
+          });
+        } else if (meta.type === 'number' || typeof val === 'number') {
+          var numSpan = document.createElement('span');
+          numSpan.className = 'table-num';
+          numSpan.textContent = (val !== undefined && val !== null) ? String(val) : '';
+          td.appendChild(numSpan);
+        } else if (meta.type === 'date') {
+          var dateSpan = document.createElement('span');
+          dateSpan.className = 'table-date';
+          dateSpan.textContent = (val !== undefined && val !== null) ? String(val) : '';
+          td.appendChild(dateSpan);
+        } else if (col.includes('starRating') || (typeof val === 'string' && val.includes('★'))) {
+          var starSpan = document.createElement('span');
+          starSpan.className = 'card-rating';
+          starSpan.textContent = String(val);
+          td.appendChild(starSpan);
+        } else {
+          var textSpan = document.createElement('span');
+          textSpan.textContent = (val !== undefined && val !== null) ? String(val) : '';
+          textSpan.setAttribute('dir', 'auto');
+          td.appendChild(textSpan);
+        }
+
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+
+    // 3. Table Footer (tfoot) - Computed Summarize Row
+    if (hasAnySummaries(cols, viewSummaries)) {
+      var tfoot = createTableSummaryFoot(itemsList, cols, colSizes, viewSummaries, isGrouped ? 'Group Summary' : null);
+      table.appendChild(tfoot);
+    }
+
+    wrapper.appendChild(table);
+    return wrapper;
+  }
+
+  function hasAnySummaries(cols, viewSummaries) {
+    if (!viewSummaries) return false;
+    for (var i = 0; i < cols.length; i++) {
+      if (getColumnSummaryRule(cols[i], viewSummaries)) return true;
+    }
+    return false;
+  }
+
+  function getColumnSummaryRule(col, viewSummaries) {
+    if (!viewSummaries) return null;
+    if (viewSummaries[col]) return viewSummaries[col];
+    var cleanCol = col.replace(/^formula[.]/, '').replace(/^note[.]/, '');
+    if (viewSummaries[cleanCol]) return viewSummaries[cleanCol];
+    return null;
+  }
+
+  function createTableSummaryFoot(itemsList, cols, colSizes, viewSummaries, groupLabel) {
+    var tfoot = document.createElement('tfoot');
+    tfoot.className = 'bases-tfoot';
+
+    var tr = document.createElement('tr');
+    tr.className = 'bases-tr bases-summary-row';
+
+    cols.forEach(function(col, idx) {
+      var td = document.createElement('td');
+      td.className = 'bases-td bases-summary-cell';
+      td.setAttribute('data-column', col);
+
+      var width = getColumnWidth(col, colSizes);
+      if (width) {
+        td.style.width = width + 'px';
+        td.style.minWidth = width + 'px';
+      }
+
+      var rule = getColumnSummaryRule(col, viewSummaries);
+      if (rule) {
+        var summaryResult = calculateSummary(rule, col, itemsList);
+        var content = document.createElement('div');
+        content.className = 'summary-content';
+
+        var labelSpan = document.createElement('span');
+        labelSpan.className = 'summary-type-label';
+        labelSpan.textContent = summaryResult.label;
+        content.appendChild(labelSpan);
+
+        var valSpan = document.createElement('span');
+        valSpan.className = 'summary-result-value';
+        valSpan.textContent = String(summaryResult.value);
+        content.appendChild(valSpan);
+
+        td.appendChild(content);
+      } else if (idx === 0 && groupLabel) {
+        var groupLabelSpan = document.createElement('span');
+        groupLabelSpan.className = 'summary-type-label';
+        groupLabelSpan.textContent = groupLabel;
+        td.appendChild(groupLabelSpan);
+      }
+
+      tr.appendChild(td);
+    });
+
+    tfoot.appendChild(tr);
+    return tfoot;
+  }
+
+  function calculateSummary(rule, col, itemsList) {
+    var rawVals = [];
+    var filledVals = [];
+    var numVals = [];
+    var boolVals = [];
+
+    itemsList.forEach(function(it) {
+      var v = getItemValue(it, col);
+      rawVals.push(v);
+      if (v !== undefined && v !== null && v !== '') {
+        filledVals.push(v);
+        var n = Number(v);
+        if (!isNaN(n) && typeof v !== 'boolean') {
+          numVals.push(n);
+        }
+        if (typeof v === 'boolean') {
+          boolVals.push(v);
+        }
+      }
+    });
+
+    // Check if rule refers to a top-level summary formula
+    var ruleStr = String(rule).trim();
+    if (base.summaries && base.summaries[ruleStr]) {
+      ruleStr = String(base.summaries[ruleStr]).trim();
+    }
+
+    var lowerRule = ruleStr.toLowerCase();
+
+    // 1. Built-in obsidian summary functions
+    if (lowerRule === 'count') {
+      return { label: 'Count', value: itemsList.length };
+    }
+    if (lowerRule === 'filled') {
+      return { label: 'Filled', value: filledVals.length };
+    }
+    if (lowerRule === 'empty') {
+      return { label: 'Empty', value: itemsList.length - filledVals.length };
+    }
+    if (lowerRule === 'unique') {
+      var uniq = new Set(filledVals.map(function(x) { return Array.isArray(x) ? x.join(',') : String(x); }));
+      return { label: 'Unique', value: uniq.size };
+    }
+    if (lowerRule === 'checked') {
+      var checkedCount = boolVals.filter(function(b) { return b === true; }).length;
+      return { label: 'Checked', value: checkedCount };
+    }
+    if (lowerRule === 'unchecked') {
+      var uncheckedCount = boolVals.filter(function(b) { return b === false; }).length;
+      return { label: 'Unchecked', value: uncheckedCount };
+    }
+    if (lowerRule === 'sum') {
+      var s = numVals.reduce(function(acc, n) { return acc + n; }, 0);
+      return { label: 'Sum', value: Number.isInteger(s) ? s : Math.round(s * 100) / 100 };
+    }
+    if (lowerRule === 'average' || lowerRule === 'mean' || lowerRule === 'avg') {
+      if (numVals.length === 0) return { label: 'Average', value: '-' };
+      var sumVal = numVals.reduce(function(acc, n) { return acc + n; }, 0);
+      var avg = sumVal / numVals.length;
+      return { label: 'Average', value: Math.round(avg * 100) / 100 };
+    }
+    if (lowerRule === 'median') {
+      if (numVals.length === 0) return { label: 'Median', value: '-' };
+      var sorted = numVals.slice().sort(function(a, b) { return a - b; });
+      var mid = Math.floor(sorted.length / 2);
+      var med = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      return { label: 'Median', value: Math.round(med * 100) / 100 };
+    }
+    if (lowerRule === 'min') {
+      if (numVals.length > 0) {
+        return { label: 'Min', value: Math.min.apply(null, numVals) };
+      }
+      if (filledVals.length > 0) {
+        var sortedVals = filledVals.slice().sort();
+        return { label: 'Min', value: sortedVals[0] };
+      }
+      return { label: 'Min', value: '-' };
+    }
+    if (lowerRule === 'max') {
+      if (numVals.length > 0) {
+        return { label: 'Max', value: Math.max.apply(null, numVals) };
+      }
+      if (filledVals.length > 0) {
+        var sortedVals = filledVals.slice().sort();
+        return { label: 'Max', value: sortedVals[sortedVals.length - 1] };
+      }
+      return { label: 'Max', value: '-' };
+    }
+    if (lowerRule === 'range') {
+      if (numVals.length > 0) {
+        var min = Math.min.apply(null, numVals);
+        var max = Math.max.apply(null, numVals);
+        var diff = max - min;
+        return { label: 'Range', value: Number.isInteger(diff) ? diff : Math.round(diff * 100) / 100 };
+      }
+      return { label: 'Range', value: '-' };
+    }
+
+    // 2. Custom formula evaluation
+    try {
+      var customResult = evaluateCustomSummaryFormula(ruleStr, filledVals, numVals);
+      return { label: ruleStr.replace(/^values[.]/, ''), value: customResult };
+    } catch (e) {
+      console.warn('Failed to evaluate custom summary formula:', ruleStr, e);
+      return { label: 'Summary', value: '-' };
+    }
+  }
+
+  function evaluateCustomSummaryFormula(formula, filledVals, numVals) {
+    var rawValues = filledVals.slice();
+    var numbers = numVals.slice();
+
+    function ValuesWrapper(arr, nums) {
+      this.items = arr;
+      this.nums = nums;
+    }
+
+    ValuesWrapper.prototype.sum = function() {
+      var s = this.nums.reduce(function(a, b) { return a + b; }, 0);
+      return Number.isInteger(s) ? s : Math.round(s * 100) / 100;
+    };
+
+    ValuesWrapper.prototype.mean = function() {
+      if (this.nums.length === 0) return 0;
+      var s = this.nums.reduce(function(a, b) { return a + b; }, 0);
+      return s / this.nums.length;
+    };
+
+    ValuesWrapper.prototype.avg = function() {
+      return this.mean();
+    };
+
+    ValuesWrapper.prototype.median = function() {
+      if (this.nums.length === 0) return 0;
+      var sorted = this.nums.slice().sort(function(a, b) { return a - b; });
+      var mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    };
+
+    ValuesWrapper.prototype.min = function() {
+      return this.nums.length > 0 ? Math.min.apply(null, this.nums) : 0;
+    };
+
+    ValuesWrapper.prototype.max = function() {
+      return this.nums.length > 0 ? Math.max.apply(null, this.nums) : 0;
+    };
+
+    ValuesWrapper.prototype.count = function() {
+      return this.items.length;
+    };
+
+    ValuesWrapper.prototype.unique = function() {
+      var set = new Set(this.items.map(String));
+      return set.size;
+    };
+
+    Number.prototype.round = function(decimals) {
+      var factor = Math.pow(10, decimals || 0);
+      return Math.round(this * factor) / factor;
+    };
+
+    var values = new ValuesWrapper(rawValues, numbers);
+    var safeEvaluator = new Function('values', 'return (' + formula + ');');
+    var res = safeEvaluator(values);
+
+    if (typeof res === 'number') {
+      return Number.isInteger(res) ? res : Math.round(res * 100) / 100;
+    }
+    return res !== undefined && res !== null ? String(res) : '-';
+  }
+
+  function getColumnWidth(col, colSizes) {
+    if (!colSizes) return null;
+    if (colSizes[col]) return colSizes[col];
+    var cleanCol = col.replace(/^formula[.]/, '').replace(/^note[.]/, '');
+    if (colSizes[cleanCol]) return colSizes[cleanCol];
+    return null;
+  }
+
+  function getPropertyDisplayName(col) {
+    if (col === 'file.name' || col === 'name' || col === 'file') return 'Name';
+    var clean = col.replace(/^formula[.]/, '').replace(/^note[.]/, '');
+    var meta = getPropertyMetadata(col);
+    return (meta && meta.name && meta.name !== col) ? meta.name : clean;
+  }
+
+  function toggleColumnSort(col) {
+    var existingIdx = activeSortRules.findIndex(function(s) { return s.property === col; });
+    if (existingIdx === -1) {
+      activeSortRules.push({ property: col, direction: 'ASC' });
+    } else if (activeSortRules[existingIdx].direction.toUpperCase() === 'ASC') {
+      activeSortRules[existingIdx].direction = 'DESC';
+    } else {
+      activeSortRules.splice(existingIdx, 1);
+    }
+    saveSortState();
+    renderSortPopover();
+    renderCards();
+  }
   }
 
   function createCardElement(item) {

@@ -35,6 +35,8 @@ function computeViewSignature(v: Record<string, unknown>): string {
 		typeof v.cardSize === 'number' ? v.cardSize : '',
 		typeof v.imageAspectRatio === 'number' ? v.imageAspectRatio : '',
 		typeof v.imageFit === 'string' ? v.imageFit : '',
+		JSON.stringify(v.columnSize ?? ''),
+		JSON.stringify(v.summaries ?? ''),
 	];
 	return parts.join('|');
 }
@@ -63,6 +65,16 @@ export function parseBaseFile(content: string, filePath: string): BaseFileConfig
 		for (const [key, val] of Object.entries(parsedObj.formulas)) {
 			if (typeof val === 'string') {
 				formulas[key] = val;
+			}
+		}
+	}
+
+	const summaries: Record<string, string> = {};
+
+	if (isRecord(parsedObj.summaries)) {
+		for (const [key, val] of Object.entries(parsedObj.summaries)) {
+			if (typeof val === 'string') {
+				summaries[key] = val;
 			}
 		}
 	}
@@ -113,6 +125,16 @@ export function parseBaseFile(content: string, filePath: string): BaseFileConfig
 				imageAspectRatio:
 					typeof v.imageAspectRatio === 'number' ? v.imageAspectRatio : 1.5,
 				imageFit: typeof v.imageFit === 'string' ? v.imageFit : 'cover',
+				columnSize: isRecord(v.columnSize)
+					? (Object.fromEntries(
+							Object.entries(v.columnSize).filter(([_, val]) => typeof val === 'number'),
+						) as Record<string, number>)
+					: undefined,
+				summaries: isRecord(v.summaries)
+					? (Object.fromEntries(
+							Object.entries(v.summaries).filter(([_, val]) => typeof val === 'string'),
+						) as Record<string, string>)
+					: undefined,
 			};
 			views.push(view);
 		}
@@ -135,6 +157,7 @@ export function parseBaseFile(content: string, filePath: string): BaseFileConfig
 		fileName,
 		baseTitle,
 		formulas,
+		summaries,
 		views,
 	};
 }

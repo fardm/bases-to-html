@@ -136,6 +136,7 @@ export class HtmlBuilder {
         id: baseConfig.id,
         title: baseConfig.fileName,
         formulas: baseConfig.formulas,
+        summaries: baseConfig.summaries || {},
         views: baseConfig.views,
         propertyTypes: baseConfig.propertyTypes || {},
       },
