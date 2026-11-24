@@ -1775,7 +1775,6 @@ export function getClientScript(): string {
     renderSortPopover();
     renderCards();
   }
-  }
 
   function createCardElement(item) {
     var card = document.createElement('div');
