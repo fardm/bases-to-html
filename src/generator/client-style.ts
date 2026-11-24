@@ -92,6 +92,46 @@ export function getClientCss(customCss = ''): string {
   --font-family: Georgia, Cambria, "Times New Roman", Times, serif;
 }
 
+/* Centralized SVG Icon Styling (Obsidian / Lucide style) */
+.b2h-icon {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.b2h-icon-xs {
+  width: 13px;
+  height: 13px;
+}
+
+.b2h-icon-sm {
+  width: 15px;
+  height: 15px;
+}
+
+.b2h-icon-md {
+  width: 18px;
+  height: 18px;
+}
+
+.b2h-icon-lg {
+  width: 24px;
+  height: 24px;
+}
+
+.b2h-icon-xl {
+  width: 32px;
+  height: 32px;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

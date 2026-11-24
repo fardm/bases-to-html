@@ -93,6 +93,17 @@ export function getClientScript(): string {
     ]
   };
 
+  // Helper to create Lucide SVG element referencing <defs>
+  function createIconSvg(name, extraClass) {
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', extraClass ? 'b2h-icon ' + extraClass : 'b2h-icon');
+    svg.setAttribute('aria-hidden', 'true');
+    var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', '#lucide-' + name);
+    svg.appendChild(use);
+    return svg;
+  }
+
   // DOM Elements
   var htmlRoot = document.documentElement;
   var viewSelect = document.getElementById('viewSelect');
@@ -513,20 +524,23 @@ export function getClientScript(): string {
     if (propertyTypes[propName]) return propertyTypes[propName];
 
     var type = 'text';
-    var icon = '☰';
+    var icon = 'type';
 
     if (propName === 'rating' || propName.toLowerCase().includes('score') || propName === 'pages' || propName === 'year') {
       type = 'number';
-      icon = '🔢';
+      icon = 'hash';
     } else if (propName === 'date' || propName.toLowerCase().includes('date')) {
       type = 'date';
-      icon = '📅';
+      icon = 'calendar';
     } else if (propName === 'badge' || propName === 'tags' || propName === 'file.tags') {
       type = 'list';
-      icon = '🏷';
+      icon = 'tag';
     } else if (propName === 'file' || propName === 'file.name') {
       type = 'text';
-      icon = '📄';
+      icon = 'file-text';
+    } else if (propName.startsWith('formula.')) {
+      type = 'text';
+      icon = 'calculator';
     }
 
     return { id: propName, name: propName, type: type, icon: icon };
@@ -585,24 +599,32 @@ export function getClientScript(): string {
       row.className = 'popover-rule-row';
       row.setAttribute('draggable', 'true');
 
-      // Drag Handle
+      // Drag Handle with Lucide grip icon
       var dragHandle = document.createElement('span');
       dragHandle.className = 'drag-handle';
-      dragHandle.innerHTML = '⠿';
+      dragHandle.title = 'Drag to reorder';
+      dragHandle.appendChild(createIconSvg('grip-vertical', 'b2h-icon-drag'));
       row.appendChild(dragHandle);
 
       // Pill container
       var pill = document.createElement('div');
       pill.className = 'popover-rule-pill';
 
+      // Property Icon
+      var meta = getPropertyMetadata(rule.property);
+      var propIconSpan = document.createElement('span');
+      propIconSpan.className = 'pill-icon';
+      propIconSpan.appendChild(createIconSvg(meta.icon || 'type', 'b2h-icon-xs'));
+      pill.appendChild(propIconSpan);
+
       // Property Select
       var propSelect = document.createElement('select');
       propSelect.className = 'pill-select';
       allProps.forEach(function(p) {
-        var meta = getPropertyMetadata(p);
+        var m = getPropertyMetadata(p);
         var opt = document.createElement('option');
         opt.value = p;
-        opt.textContent = (meta.icon ? meta.icon + ' ' : '') + meta.name;
+        opt.textContent = m.name;
         if (p === rule.property) opt.selected = true;
         propSelect.appendChild(opt);
       });
@@ -645,11 +667,11 @@ export function getClientScript(): string {
 
       row.appendChild(pill);
 
-      // Delete Button
+      // Delete Button with Lucide trash icon
       var delBtn = document.createElement('button');
       delBtn.className = 'popover-rule-delete';
       delBtn.title = 'Remove sort rule';
-      delBtn.innerHTML = '🗑';
+      delBtn.appendChild(createIconSvg('trash', 'b2h-icon-sm'));
       delBtn.addEventListener('click', function() {
         activeSortRules.splice(idx, 1);
         saveSortState();
@@ -696,14 +718,21 @@ export function getClientScript(): string {
     var pill = document.createElement('div');
     pill.className = 'popover-rule-pill';
 
+    // Property Icon
+    var meta = getPropertyMetadata(activeGroupRule.property);
+    var propIconSpan = document.createElement('span');
+    propIconSpan.className = 'pill-icon';
+    propIconSpan.appendChild(createIconSvg(meta.icon || 'type', 'b2h-icon-xs'));
+    pill.appendChild(propIconSpan);
+
     // Property Select
     var propSelect = document.createElement('select');
     propSelect.className = 'pill-select';
     allProps.forEach(function(p) {
-      var meta = getPropertyMetadata(p);
+      var m = getPropertyMetadata(p);
       var opt = document.createElement('option');
       opt.value = p;
-      opt.textContent = (meta.icon ? meta.icon + ' ' : '') + meta.name;
+      opt.textContent = m.name;
       if (p === activeGroupRule.property) opt.selected = true;
       propSelect.appendChild(opt);
     });
@@ -746,11 +775,11 @@ export function getClientScript(): string {
 
     row.appendChild(pill);
 
-    // Delete Button (Remove grouping)
+    // Delete Button (Remove grouping) with Lucide trash icon
     var delBtn = document.createElement('button');
     delBtn.className = 'popover-rule-delete';
     delBtn.title = 'Remove grouping';
-    delBtn.innerHTML = '🗑';
+    delBtn.appendChild(createIconSvg('trash', 'b2h-icon-sm'));
     delBtn.addEventListener('click', function() {
       activeGroupRule = null;
       saveGroupState();
@@ -799,14 +828,21 @@ export function getClientScript(): string {
       var pill = document.createElement('div');
       pill.className = 'popover-rule-pill';
 
+      // Property Icon
+      var meta = getPropertyMetadata(rule.property);
+      var propIconSpan = document.createElement('span');
+      propIconSpan.className = 'pill-icon';
+      propIconSpan.appendChild(createIconSvg(meta.icon || 'type', 'b2h-icon-xs'));
+      pill.appendChild(propIconSpan);
+
       // 1. Property Select
       var propSelect = document.createElement('select');
       propSelect.className = 'pill-select';
       allProps.forEach(function(p) {
-        var meta = getPropertyMetadata(p);
+        var m = getPropertyMetadata(p);
         var opt = document.createElement('option');
         opt.value = p;
-        opt.textContent = (meta.icon ? meta.icon + ' ' : '') + meta.name;
+        opt.textContent = m.name;
         if (p === rule.property) opt.selected = true;
         propSelect.appendChild(opt);
       });
@@ -890,11 +926,11 @@ export function getClientScript(): string {
 
       row.appendChild(pill);
 
-      // Delete Button
+      // Delete Button with Lucide X icon
       var delBtn = document.createElement('button');
       delBtn.className = 'popover-rule-delete';
       delBtn.title = 'Remove filter';
-      delBtn.innerHTML = '&times;';
+      delBtn.appendChild(createIconSvg('x', 'b2h-icon-sm'));
       delBtn.addEventListener('click', function() {
         activeFilterRules.splice(idx, 1);
         if (activeFilterRules.length > 0 && activeFilterRules[0]) {
@@ -950,9 +986,10 @@ export function getClientScript(): string {
       });
 
       var label = document.createElement('span');
-      label.textContent = (meta.icon ? meta.icon + ' ' : '') + meta.name;
+      label.textContent = meta.name;
 
       left.appendChild(chk);
+      left.appendChild(createIconSvg(meta.icon || 'type', 'b2h-icon-xs'));
       left.appendChild(label);
       row.appendChild(left);
 
@@ -1239,11 +1276,11 @@ export function getClientScript(): string {
       img.loading = 'lazy';
       img.onerror = function() {
         img.remove();
-        imgWrapper.appendChild(createPlaceholder(item.title));
+        imgWrapper.appendChild(createPlaceholder());
       };
       imgWrapper.appendChild(img);
     } else {
-      imgWrapper.appendChild(createPlaceholder(item.title));
+      imgWrapper.appendChild(createPlaceholder());
     }
     card.appendChild(imgWrapper);
 
@@ -1302,11 +1339,10 @@ export function getClientScript(): string {
     return card;
   }
 
-  function createPlaceholder(title) {
+  function createPlaceholder() {
     var ph = document.createElement('div');
     ph.className = 'card-image-placeholder';
-    var initial = title ? title.trim()[0].toUpperCase() : '📄';
-    ph.innerHTML = '<span>' + escapeHtml(initial) + '</span>';
+    ph.appendChild(createIconSvg('image', 'b2h-icon-xl'));
     return ph;
   }
 

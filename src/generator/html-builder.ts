@@ -1,6 +1,7 @@
 import { BaseFileConfig, ExportOptions, NoteItem } from '../types';
 import { getClientScript } from './client-script';
 import { getClientCss } from './client-style';
+import { getLucideSpriteSvg, renderIconSvg } from './icons';
 
 export interface GeneratedFile {
 	relativePath: string;
@@ -188,12 +189,14 @@ export class HtmlBuilder {
   ${extraCssInclude}
 </head>
 <body>
+  ${getLucideSpriteSvg()}
+
   <!-- Navbar -->
   <nav class="navbar">
     <div class="navbar-container">
       <div class="nav-brand-group">
         <a href="${rootHref}" class="nav-brand" title="Home">
-          <span>📁</span>
+          ${renderIconSvg('folder')}
           <span>${escapeHtml(this.options.documentTitle || baseConfig.baseTitle)}</span>
         </a>
         ${
@@ -211,48 +214,48 @@ export class HtmlBuilder {
         <!-- Sort Button & Popover -->
         <div class="toolbar-btn-group">
           <button id="sortToggleBtn" class="toolbar-btn" title="Sort items">
-            <span>⇅</span>
+            ${renderIconSvg('sort')}
             <span>Sort</span>
             <span id="sortCountBadge" class="toolbar-btn-badge" style="display:none;">0</span>
           </button>
           <div id="sortPopover" class="bases-popover popover-align-left">
             <div class="popover-header">Sort by</div>
             <div id="sortRulesList" class="popover-rules-list"></div>
-            <button id="addSortBtn" class="popover-add-btn">+ Add sort</button>
+            <button id="addSortBtn" class="popover-add-btn">${renderIconSvg('plus', 'b2h-icon-xs')} Add sort</button>
           </div>
         </div>
 
         <!-- Group Button & Popover -->
         <div class="toolbar-btn-group">
           <button id="groupToggleBtn" class="toolbar-btn" title="Group items">
-            <span>🗂</span>
+            ${renderIconSvg('group')}
             <span>Group</span>
           </button>
           <div id="groupPopover" class="bases-popover popover-align-left">
             <div class="popover-header">Group by</div>
             <div id="groupRulesList" class="popover-rules-list"></div>
-            <button id="addGroupBtn" class="popover-add-btn">+ Add group</button>
+            <button id="addGroupBtn" class="popover-add-btn">${renderIconSvg('plus', 'b2h-icon-xs')} Add group</button>
           </div>
         </div>
 
         <!-- Filter Button & Popover -->
         <div class="toolbar-btn-group">
           <button id="filterToggleBtn" class="toolbar-btn" title="Filter items">
-            <span>🝖</span>
+            ${renderIconSvg('filter')}
             <span>Filter</span>
             <span id="filterCountBadge" class="toolbar-btn-badge" style="display:none;">0</span>
           </button>
           <div id="filterPopover" class="bases-popover popover-align-left" style="min-width: 440px;">
             <div class="popover-header">Filter</div>
             <div id="filterRulesList" class="popover-rules-list"></div>
-            <button id="addFilterBtn" class="popover-add-btn">+ Add filter</button>
+            <button id="addFilterBtn" class="popover-add-btn">${renderIconSvg('plus', 'b2h-icon-xs')} Add filter</button>
           </div>
         </div>
 
         <!-- Properties Button & Popover -->
         <div class="toolbar-btn-group">
           <button id="propertiesToggleBtn" class="toolbar-btn" title="Shown properties">
-            <span>⋮≡</span>
+            ${renderIconSvg('properties')}
             <span>Properties</span>
           </button>
           <div id="propertiesPopover" class="bases-popover popover-align-left">
@@ -264,12 +267,12 @@ export class HtmlBuilder {
         <!-- Search Box -->
         <div class="search-box">
           <input type="text" id="searchInput" class="search-input" placeholder="Search..." autocomplete="off">
-          <button id="searchClearBtn" class="search-clear-btn" title="Clear search">&times;</button>
+          <button id="searchClearBtn" class="search-clear-btn" title="Clear search">${renderIconSvg('x', 'b2h-icon-xs')}</button>
         </div>
 
         <!-- Settings Button -->
         <button id="settingsBtn" class="toolbar-btn" title="Display settings">
-          <span>⚙️</span>
+          ${renderIconSvg('settings')}
         </button>
       </div>
     </div>
@@ -288,15 +291,15 @@ export class HtmlBuilder {
   <div id="settingsDrawer" class="settings-drawer">
     <div class="drawer-header">
       <span class="drawer-title">Settings</span>
-      <button id="drawerCloseBtn" class="drawer-close-btn">&times;</button>
+      <button id="drawerCloseBtn" class="drawer-close-btn">${renderIconSvg('x')}</button>
     </div>
     <div class="drawer-body">
       <div class="setting-row">
         <span class="setting-label">Theme</span>
         <span class="setting-desc">Switch between light and dark display</span>
         <div class="theme-toggle-group">
-          <button id="themeLightBtn" class="theme-toggle-btn">☀️ Light</button>
-          <button id="themeDarkBtn" class="theme-toggle-btn active">🌙 Dark</button>
+          <button id="themeLightBtn" class="theme-toggle-btn">${renderIconSvg('sun', 'b2h-icon-sm')} Light</button>
+          <button id="themeDarkBtn" class="theme-toggle-btn active">${renderIconSvg('moon', 'b2h-icon-sm')} Dark</button>
         </div>
       </div>
 
@@ -328,7 +331,7 @@ export class HtmlBuilder {
   <div id="noteModal" class="note-modal">
     <div class="modal-header">
       <h2 id="modalTitle" class="modal-title"></h2>
-      <button id="modalCloseBtn" class="modal-close-btn">&times;</button>
+      <button id="modalCloseBtn" class="modal-close-btn">${renderIconSvg('x')}</button>
     </div>
     <div class="modal-body">
       <div id="modalProperties" class="modal-properties"></div>
@@ -363,7 +366,7 @@ export class HtmlBuilder {
 				const viewsCount = config.views.length;
 				const itemsCount = items.length;
 				return `<a href="${slug}.html" class="base-directory-card">
-        <div class="directory-card-icon">📚</div>
+        <div class="directory-card-icon">${renderIconSvg('book-open', 'b2h-icon-xl')}</div>
         <div class="directory-card-content">
           <h3 class="directory-card-title">${escapeHtml(config.baseTitle)}</h3>
           <div class="directory-card-meta">
@@ -414,6 +417,10 @@ export class HtmlBuilder {
     }
     .directory-card-icon {
       font-size: 2.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-color);
     }
     .directory-card-title {
       font-size: 1.15rem;
@@ -430,11 +437,13 @@ export class HtmlBuilder {
   </style>
 </head>
 <body>
+  ${getLucideSpriteSvg()}
+
   <nav class="navbar">
     <div class="navbar-container">
       <div class="nav-brand-group">
         <a href="index.html" class="nav-brand">
-          <span>📁</span>
+          ${renderIconSvg('folder')}
           <span>${escapeHtml(title)}</span>
         </a>
       </div>

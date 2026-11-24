@@ -20,6 +20,7 @@ import {
 	EvaluationContext,
 	toSafeString,
 } from './expression-evaluator';
+import { getPropertyIconName } from '../generator/icons';
 
 export interface ScannedVaultData {
 	baseConfig: BaseFileConfig;
@@ -167,11 +168,11 @@ export class VaultScanner {
 			items.push(item);
 		}
 
-		// Compile property metadata
+		// Compile property metadata with Lucide icon names
 		const propertyTypes: Record<string, PropertyMetadata> = {
-			file: { id: 'file', name: 'file', type: 'text', icon: '📄' },
-			'file.name': { id: 'file.name', name: 'file.name', type: 'text', icon: '📄' },
-			'file.tags': { id: 'file.tags', name: 'file.tags', type: 'list', icon: '🏷' },
+			file: { id: 'file', name: 'file', type: 'text', icon: 'file-text' },
+			'file.name': { id: 'file.name', name: 'file.name', type: 'text', icon: 'file-text' },
+			'file.tags': { id: 'file.tags', name: 'file.tags', type: 'list', icon: 'tag' },
 		};
 
 		for (const [propName, counts] of propertyTypeOccurrences.entries()) {
@@ -187,7 +188,7 @@ export class VaultScanner {
 				id: propName,
 				name: propName,
 				type: dominantType,
-				icon: getIconForType(dominantType),
+				icon: getPropertyIconName(dominantType, propName),
 			};
 		}
 
@@ -198,7 +199,7 @@ export class VaultScanner {
 					id: `formula.${fKey}`,
 					name: `formula.${fKey}`,
 					type: 'text',
-					icon: '🧮',
+					icon: 'calculator',
 				};
 			}
 		}
@@ -296,24 +297,6 @@ function inferTypeFromValue(val: unknown): PropertyType {
 	}
 
 	return 'text';
-}
-
-function getIconForType(type: PropertyType): string {
-	switch (type) {
-		case 'number':
-			return '🔢';
-		case 'date':
-			return '📅';
-		case 'checkbox':
-			return '☑';
-		case 'list':
-			return '🏷';
-		case 'link':
-			return '🔗';
-		case 'text':
-		default:
-			return '☰';
-	}
 }
 
 function stripFrontmatter(content: string): string {
