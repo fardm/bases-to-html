@@ -289,11 +289,13 @@ export function getClientScript(): string {
     if (viewSelect) viewSelect.value = String(viewIdx);
 
     var cardSize = view.cardSize || 180;
-    var aspectRatio = view.imageAspectRatio || 1.5;
+    var rawRatio = typeof view.imageAspectRatio === 'number' && view.imageAspectRatio > 0 ? view.imageAspectRatio : 1.5;
+    var cssRatio = 1 / rawRatio;
     var imageFit = view.imageFit || 'cover';
 
     htmlRoot.style.setProperty('--card-size', cardSize + 'px');
-    htmlRoot.style.setProperty('--aspect-ratio', String(aspectRatio));
+    htmlRoot.style.setProperty('--aspect-ratio', String(rawRatio));
+    htmlRoot.style.setProperty('--css-aspect-ratio', String(cssRatio));
     htmlRoot.style.setProperty('--image-fit', imageFit);
 
     var savedSort = localStorage.getItem(storagePrefix + 'view_' + viewIdx + '_sort');

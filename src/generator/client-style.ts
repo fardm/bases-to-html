@@ -28,6 +28,7 @@ export function getClientCss(customCss = ''): string {
   --container-max-width: 1280px;
   --card-size: 180px;
   --aspect-ratio: 1.5;
+  --css-aspect-ratio: 0.666667;
   --image-fit: cover;
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s ease;
@@ -412,7 +413,7 @@ body {
 
 .card-image-wrapper {
   width: 100%;
-  aspect-ratio: var(--aspect-ratio, 1.5);
+  aspect-ratio: var(--css-aspect-ratio, 1 / var(--aspect-ratio, 1.5));
   background-color: var(--bg-tertiary);
   position: relative;
   overflow: hidden;

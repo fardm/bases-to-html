@@ -167,8 +167,17 @@ export class HtmlBuilder {
 			? `<script src="${jsRef}"></script>`
 			: `<script>\n${jsInline || ''}\n</script>`;
 
+		const firstView = baseConfig.views[0];
+		const initCardSize = firstView?.cardSize || 180;
+		const initRawRatio =
+			typeof firstView?.imageAspectRatio === 'number' && firstView.imageAspectRatio > 0
+				? firstView.imageAspectRatio
+				: 1.5;
+		const initCssRatio = 1 / initRawRatio;
+		const initImageFit = firstView?.imageFit || 'cover';
+
 		return `<!DOCTYPE html>
-<html lang="en" data-theme="dark" data-width="normal" data-font="${this.options.font || 'vazirmatn'}">
+<html lang="en" data-theme="dark" data-width="normal" data-font="${this.options.font || 'vazirmatn'}" style="--card-size: ${initCardSize}px; --aspect-ratio: ${initRawRatio}; --css-aspect-ratio: ${initCssRatio}; --image-fit: ${initImageFit};">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
