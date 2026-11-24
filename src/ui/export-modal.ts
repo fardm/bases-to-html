@@ -1,4 +1,4 @@
-import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile } from 'obsidian';
+import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile, setIcon } from 'obsidian';
 import { Exporter } from '../generator/exporter';
 import type BasesToHtmlPlugin from '../main';
 import { ExportFormat, ExportOptions, ExportScope } from '../types';
@@ -35,8 +35,8 @@ export class ExportModal extends Modal {
 	private font: string;
 	private customCss: string;
 	private cssSource: string;
-	private outputLocation: string;
 	private openExportedFiles: boolean;
+	private documentClickHandler?: (e: MouseEvent) => void;
 
 	constructor(app: App, plugin: BasesToHtmlPlugin) {
 		super(app);
@@ -49,7 +49,6 @@ export class ExportModal extends Modal {
 		this.font = defaults.defaultFont || 'vazirmatn';
 		this.customCss = defaults.customCss || '';
 		this.cssSource = this.customCss.trim() ? 'Default settings' : 'None';
-		this.outputLocation = defaults.defaultOutputFolder || '';
 		this.openExportedFiles = defaults.openAfterExport ?? true;
 	}
 
@@ -65,8 +64,11 @@ export class ExportModal extends Modal {
 			.getFiles()
 			.filter((f) => f.extension === 'base');
 
-		// Pre-select all by default
-		this.baseFiles.forEach((f) => this.selectedFiles.add(f.path));
+		// Pre-select the active file if it is a .base file
+		const activeFile = this.app.workspace.getActiveFile();
+		if (activeFile && activeFile.extension === 'base') {
+			this.selectedFiles.add(activeFile.path);
+		}
 
 		if (this.baseFiles.length === 0) {
 			contentEl.createEl('p', {
@@ -95,81 +97,117 @@ export class ExportModal extends Modal {
 		});
 		baseFilesSection.createEl('h3', { text: 'Select base files' });
 
-		const controlsRow = baseFilesSection.createDiv({
-			cls: 'b2h-base-select-controls',
+		const pickerContainer = baseFilesSection.createDiv({
+			cls: 'b2h-base-picker-container',
 		});
 
-		const searchInput = controlsRow.createEl('input', {
+		const inputWrapper = pickerContainer.createDiv({
+			cls: 'b2h-base-input-wrapper',
+		});
+
+		const searchInput = inputWrapper.createEl('input', {
 			type: 'text',
-			placeholder: 'Filter bases...',
+			placeholder: 'Click or type to search and add base files...',
 			cls: 'b2h-base-search-input',
 		});
 
-		const selectAllBtn = controlsRow.createEl('button', {
-			text: 'Select all',
+		const dropdownMenu = inputWrapper.createDiv({
+			cls: 'b2h-base-dropdown',
 		});
-		const deselectAllBtn = controlsRow.createEl('button', {
-			text: 'Deselect all',
-		});
+		dropdownMenu.hide();
 
-		const fileListContainer = baseFilesSection.createDiv({
-			cls: 'b2h-file-list-container',
+		const selectedListContainer = pickerContainer.createDiv({
+			cls: 'b2h-selected-bases-list',
 		});
 
-		const renderFileList = (filter = '') => {
-			fileListContainer.empty();
-			const lower = filter.toLowerCase();
-			const matching = this.baseFiles.filter((f) =>
-				f.path.toLowerCase().includes(lower),
-			);
-
-			if (matching.length === 0) {
-				fileListContainer.createEl('p', {
-					text: 'No matching base files.',
-					cls: 'text-muted',
+		const renderSelectedList = () => {
+			selectedListContainer.empty();
+			if (this.selectedFiles.size === 0) {
+				selectedListContainer.createDiv({
+					text: 'No base files selected. Search above to add base files to export.',
+					cls: 'b2h-selected-empty',
 				});
 				return;
 			}
 
-			matching.forEach((file) => {
-				const row = fileListContainer.createDiv({ cls: 'b2h-file-checkbox-row' });
+			this.selectedFiles.forEach((filePath) => {
+				const row = selectedListContainer.createDiv({
+					cls: 'b2h-selected-base-row',
+				});
 
-				const cb = row.createEl('input', { type: 'checkbox' });
-				cb.checked = this.selectedFiles.has(file.path);
-				cb.addEventListener('change', () => {
-					if (cb.checked) {
-						this.selectedFiles.add(file.path);
-					} else {
-						this.selectedFiles.delete(file.path);
+				const info = row.createDiv({ cls: 'b2h-selected-base-info' });
+				const iconSpan = info.createSpan({ cls: 'b2h-base-row-icon' });
+				setIcon(iconSpan, 'database');
+				info.createSpan({ text: filePath, cls: 'b2h-base-row-title' });
+
+				const deleteBtn = row.createEl('button', {
+					cls: 'clickable-icon b2h-btn-remove',
+					attr: { 'aria-label': 'Remove base file', type: 'button' },
+				});
+				setIcon(deleteBtn, 'trash-2');
+
+				deleteBtn.addEventListener('click', (e) => {
+					e.stopPropagation();
+					this.selectedFiles.delete(filePath);
+					renderSelectedList();
+					if (dropdownMenu.isShown()) {
+						renderDropdown();
 					}
-				});
-
-				const label = row.createEl('label', {
-					text: file.path,
-					cls: 'b2h-file-checkbox-label',
-				});
-				label.addEventListener('click', () => {
-					cb.checked = !cb.checked;
-					cb.dispatchEvent(new Event('change'));
 				});
 			});
 		};
 
-		renderFileList();
+		const renderDropdown = () => {
+			dropdownMenu.empty();
+			const query = searchInput.value.trim().toLowerCase();
+			const available = this.baseFiles.filter(
+				(f) => !this.selectedFiles.has(f.path) && f.path.toLowerCase().includes(query),
+			);
 
-		searchInput.addEventListener('input', (e) => {
-			renderFileList((e.target as HTMLInputElement).value);
-		});
+			if (available.length === 0) {
+				const emptyMsg = this.baseFiles.every((f) => this.selectedFiles.has(f.path))
+					? 'All base files have been added'
+					: 'No matching base files found';
+				dropdownMenu.createDiv({
+					text: emptyMsg,
+					cls: 'b2h-base-dropdown-empty',
+				});
+				return;
+			}
 
-		selectAllBtn.addEventListener('click', () => {
-			this.baseFiles.forEach((f) => this.selectedFiles.add(f.path));
-			renderFileList(searchInput.value);
-		});
+			available.forEach((file) => {
+				const item = dropdownMenu.createDiv({ cls: 'b2h-base-dropdown-item' });
+				const iconSpan = item.createSpan({ cls: 'b2h-dropdown-item-icon' });
+				setIcon(iconSpan, 'database');
+				item.createSpan({ text: file.path, cls: 'b2h-dropdown-item-text' });
 
-		deselectAllBtn.addEventListener('click', () => {
-			this.selectedFiles.clear();
-			renderFileList(searchInput.value);
-		});
+				item.addEventListener('mousedown', (e) => {
+					e.preventDefault();
+					this.selectedFiles.add(file.path);
+					searchInput.value = '';
+					renderSelectedList();
+					renderDropdown();
+				});
+			});
+		};
+
+		const showDropdown = () => {
+			renderDropdown();
+			dropdownMenu.show();
+		};
+
+		searchInput.addEventListener('focus', () => showDropdown());
+		searchInput.addEventListener('click', () => showDropdown());
+		searchInput.addEventListener('input', () => showDropdown());
+
+		this.documentClickHandler = (e: MouseEvent) => {
+			if (!inputWrapper.contains(e.target as Node)) {
+				dropdownMenu.hide();
+			}
+		};
+		document.addEventListener('click', this.documentClickHandler);
+
+		renderSelectedList();
 
 		// 3.3 Export format
 		new Setting(contentEl)
@@ -334,22 +372,7 @@ export class ExportModal extends Modal {
 			updateSourceBadge();
 		});
 
-		// 3.7 Output location
-		new Setting(contentEl)
-			.setName('Output folder')
-			.setDesc(
-				'Vault folder location to save exports. Default creates a folder named after document title in vault root.',
-			)
-			.addText((text) =>
-				text
-					.setValue(this.outputLocation)
-					.setPlaceholder('Exports (or leave blank for root)')
-					.onChange((val) => {
-						this.outputLocation = val.trim();
-					}),
-			);
-
-		// 3.8 Open exported files
+		// 3.7 Open exported files
 		new Setting(contentEl)
 			.setName('Open exported files')
 			.setDesc('Automatically open the exported HTML upon completion.')
@@ -392,7 +415,7 @@ export class ExportModal extends Modal {
 			exportScope: this.exportScope,
 			font: this.font,
 			customCss: this.customCss,
-			outputLocation: this.outputLocation,
+			outputLocation: this.plugin.settings.defaultOutputFolder || '',
 			openExportedFiles: this.openExportedFiles,
 		};
 
@@ -411,6 +434,10 @@ export class ExportModal extends Modal {
 	}
 
 	onClose() {
+		if (this.documentClickHandler) {
+			document.removeEventListener('click', this.documentClickHandler);
+			this.documentClickHandler = undefined;
+		}
 		const { contentEl } = this;
 		contentEl.empty();
 	}
