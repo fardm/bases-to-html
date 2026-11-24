@@ -45,18 +45,14 @@ export class ExportModal extends Modal {
 		super(app);
 		this.plugin = plugin;
 
-		const defaults = plugin.settings;
-		this.documentTitle = defaults.defaultTitle || 'My archive';
-		this.exportFormat = defaults.defaultFormat || 'single';
-		const rawScope = defaults.defaultScope as string;
-		this.exportScope = (rawScope === 'all' || rawScope === 'full')
-			? 'full'
-			: (rawScope === 'properties-only' ? 'properties-only' : 'bases-only');
-		this.exportedData = defaults.defaultExportedData || 'all';
-		this.font = defaults.defaultFont || 'vazirmatn';
-		this.customCss = defaults.customCss || '';
-		this.cssSource = this.customCss.trim() ? 'Default settings' : 'None';
-		this.openExportedFiles = defaults.openAfterExport ?? true;
+		this.documentTitle = 'My archive';
+		this.exportFormat = 'single';
+		this.exportScope = 'full';
+		this.exportedData = 'all';
+		this.font = 'vazirmatn';
+		this.customCss = '';
+		this.cssSource = 'None';
+		this.openExportedFiles = true;
 	}
 
 	onOpen() {
