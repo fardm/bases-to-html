@@ -68,7 +68,7 @@ export function resolvePropertyPath(
 	if (cleanPath === 'file.folder') {
 		return context.file.folder;
 	}
-	if (cleanPath === 'file.tags') {
+	if (cleanPath === 'file.tags' || cleanPath === 'tags' || cleanPath === 'file.tag') {
 		return context.file.tags;
 	}
 
@@ -167,22 +167,44 @@ export function evaluateExpression(
 				evaluateExpression(a, context),
 			);
 
-			if (targetName === 'file' && methodName === 'hasTag') {
+			if (
+				(targetName === 'file' && methodName === 'hasTag') ||
+				((targetName === 'file' || targetName === 'file.tags' || targetName === 'tags') &&
+					(methodName === 'contains' || methodName === 'hasTag'))
+			) {
 				const tagToFind = toSafeString(args[0]).replace(/^#/, '').toLowerCase();
-				return context.file.tags.some(
-					(t) => t.replace(/^#/, '').toLowerCase() === tagToFind,
-				);
+				return context.file.tags.some((t) => {
+					const cleanT = t.replace(/^#/, '').toLowerCase();
+					return cleanT === tagToFind || cleanT.includes(tagToFind);
+				});
 			}
 
 			const targetVal = resolvePropertyPath(targetName, context);
 			if (methodName === 'contains') {
-				const search = toSafeString(args[0]).toLowerCase();
+				const rawSearch = toSafeString(args[0]).toLowerCase();
+				const cleanSearch = rawSearch.replace(/^#/, '');
+				const isTagTarget =
+					targetName === 'file.tags' ||
+					targetName === 'tags' ||
+					targetName.toLowerCase().endsWith('tag') ||
+					targetName.toLowerCase().endsWith('tags');
+
 				if (Array.isArray(targetVal)) {
-					return targetVal.some((item) =>
-						toSafeString(item).toLowerCase().includes(search),
-					);
+					return targetVal.some((item) => {
+						const rawItem = toSafeString(item).toLowerCase();
+						const cleanItem = rawItem.replace(/^#/, '');
+						if (isTagTarget) {
+							return cleanItem === cleanSearch || cleanItem.includes(cleanSearch) || rawItem.includes(rawSearch);
+						}
+						return rawItem.includes(rawSearch);
+					});
 				}
-				return toSafeString(targetVal).toLowerCase().includes(search);
+				const rawTarget = toSafeString(targetVal).toLowerCase();
+				if (isTagTarget) {
+					const cleanTarget = rawTarget.replace(/^#/, '');
+					return cleanTarget === cleanSearch || cleanTarget.includes(cleanSearch) || rawTarget.includes(rawSearch);
+				}
+				return rawTarget.includes(rawSearch);
 			}
 		}
 	}

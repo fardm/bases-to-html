@@ -461,11 +461,14 @@ export function getClientScript(): string {
 
         var contMatch = str.match(/^([\\w.-]+)\\.contains\\(["']?(.*?)["']?\\)$/);
         if (contMatch) {
+          var contProp = contMatch[1];
+          var contVal = contMatch[2];
+          var isTag = contProp === 'file.tags' || contProp === 'tags' || contProp.toLowerCase().indexOf('tag') !== -1;
           rules.push({
             conjunction: rules.length === 0 ? 'where' : 'and',
-            property: contMatch[1],
-            operator: 'contains',
-            value: contMatch[2]
+            property: isTag ? 'file.tags' : contProp,
+            operator: isTag ? 'has_tag' : 'contains',
+            value: isTag ? contVal.replace(/^#/, '') : contVal
           });
           return;
         }
@@ -595,7 +598,13 @@ export function getClientScript(): string {
     var clean = propPath.trim();
     if (clean === 'file.name' || clean === 'name' || clean === 'file') return item.title;
     if (clean === 'file.path') return item.path;
-    if (clean === 'file.tags') return item.tags;
+    if (clean === 'file.tags' || clean === 'tags' || clean === 'file.tag') {
+      if (item.tags && Array.isArray(item.tags) && item.tags.length > 0) return item.tags;
+      if (item.properties && item.properties.tags) {
+        return Array.isArray(item.properties.tags) ? item.properties.tags : [item.properties.tags];
+      }
+      return [];
+    }
     if (clean.startsWith('formula.')) {
       var fName = clean.slice('formula.'.length);
       return item.computedFormulas ? item.computedFormulas[fName] : undefined;
@@ -1144,31 +1153,42 @@ export function getClientScript(): string {
     }
 
     if (pType === 'list') {
-      var arr = Array.isArray(rawVal) ? rawVal.map(function(x) { return String(x).toLowerCase(); }) : [String(rawVal != null ? rawVal : '').toLowerCase()];
-      var searchStr = String(target != null ? target : '').toLowerCase();
+      var isTagProp = rule.property === 'file.tags' || rule.property === 'tags' || rule.property.toLowerCase().indexOf('tag') !== -1;
+      var rawTargetStr = String(target != null ? target : '').toLowerCase();
+      var searchStr = isTagProp ? rawTargetStr.replace(/^#/, '') : rawTargetStr;
+
+      var rawList = Array.isArray(rawVal) ? rawVal : (rawVal != null && rawVal !== '' ? [rawVal] : []);
+      var arr = rawList.map(function(x) {
+        var s = String(x).toLowerCase();
+        return isTagProp ? s.replace(/^#/, '') : s;
+      });
 
       if (op === 'contains' || op === 'has_tag') {
-        return arr.some(function(item) { return item.includes(searchStr); });
+        return arr.some(function(item) {
+          return item === searchStr || item.indexOf(searchStr) !== -1;
+        });
       }
       if (op === 'does_not_contain') {
-        return !arr.some(function(item) { return item.includes(searchStr); });
+        return !arr.some(function(item) {
+          return item === searchStr || item.indexOf(searchStr) !== -1;
+        });
       }
       if (op === 'contains_any') {
-        var tokensAny = searchStr.split(/[,\\s]+/).filter(Boolean);
+        var tokensAny = searchStr.split(/[\\s,]+/).filter(Boolean);
         return tokensAny.some(function(tok) {
-          return arr.some(function(item) { return item.includes(tok); });
+          return arr.some(function(item) { return item === tok || item.indexOf(tok) !== -1; });
         });
       }
       if (op === 'contains_all') {
-        var tokensAll = searchStr.split(/[,\\s]+/).filter(Boolean);
+        var tokensAll = searchStr.split(/[\\s,]+/).filter(Boolean);
         return tokensAll.every(function(tok) {
-          return arr.some(function(item) { return item.includes(tok); });
+          return arr.some(function(item) { return item === tok || item.indexOf(tok) !== -1; });
         });
       }
       if (op === 'does_not_contain_any') {
-        var tokensNone = searchStr.split(/[,\\s]+/).filter(Boolean);
+        var tokensNone = searchStr.split(/[\\s,]+/).filter(Boolean);
         return !tokensNone.some(function(tok) {
-          return arr.some(function(item) { return item.includes(tok); });
+          return arr.some(function(item) { return item === tok || item.indexOf(tok) !== -1; });
         });
       }
       return true;

@@ -59,17 +59,22 @@ export class VaultScanner {
 			const rawTags = (cache ? getAllTags(cache) || [] : []).map((t) =>
 				t.replace(/^#/, ''),
 			);
+			const addTag = (t: unknown) => {
+				const clean = toSafeString(t).replace(/^#/, '').trim();
+				if (clean && !rawTags.includes(clean)) rawTags.push(clean);
+			};
 			if (frontmatter.tags) {
 				if (Array.isArray(frontmatter.tags)) {
-					for (const t of frontmatter.tags) {
-						const clean = toSafeString(t).replace(/^#/, '');
-						if (!rawTags.includes(clean)) rawTags.push(clean);
-					}
+					for (const t of frontmatter.tags) addTag(t);
 				} else if (typeof frontmatter.tags === 'string') {
-					for (const t of frontmatter.tags.split(/[\s,]+/)) {
-						const clean = t.replace(/^#/, '');
-						if (clean && !rawTags.includes(clean)) rawTags.push(clean);
-					}
+					for (const t of frontmatter.tags.split(/[\s,]+/)) addTag(t);
+				}
+			}
+			if (frontmatter.tag) {
+				if (Array.isArray(frontmatter.tag)) {
+					for (const t of frontmatter.tag) addTag(t);
+				} else if (typeof frontmatter.tag === 'string') {
+					for (const t of frontmatter.tag.split(/[\s,]+/)) addTag(t);
 				}
 			}
 
