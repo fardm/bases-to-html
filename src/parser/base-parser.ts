@@ -5,6 +5,40 @@ function isRecord(val: unknown): val is Record<string, unknown> {
 	return typeof val === 'object' && val !== null && !Array.isArray(val);
 }
 
+function sanitizeSlug(name: string): string {
+	return (
+		name
+			.toLowerCase()
+			.replace(/[\s/\\?%*:|"<>]+/g, '-')
+			.replace(/^-+|-+$/g, '') || 'base'
+	);
+}
+
+function generateStableHash(str: string): string {
+	let hash = 5381;
+	for (let i = 0; i < str.length; i++) {
+		hash = ((hash << 5) + hash) + str.charCodeAt(i);
+		hash |= 0;
+	}
+	return Math.abs(hash).toString(36);
+}
+
+function computeViewSignature(v: Record<string, unknown>): string {
+	// Exclude name and label so renaming does not change the ID
+	const parts = [
+		typeof v.type === 'string' ? v.type : 'cards',
+		JSON.stringify(v.filters ?? ''),
+		JSON.stringify(v.groupBy ?? ''),
+		JSON.stringify(v.sort ?? ''),
+		JSON.stringify(v.order ?? ''),
+		typeof v.image === 'string' ? v.image : '',
+		typeof v.cardSize === 'number' ? v.cardSize : '',
+		typeof v.imageAspectRatio === 'number' ? v.imageAspectRatio : '',
+		typeof v.imageFit === 'string' ? v.imageFit : '',
+	];
+	return parts.join('|');
+}
+
 export function parseBaseFile(content: string, filePath: string): BaseFileConfig {
 	let parsed: unknown = {};
 	try {
@@ -16,9 +50,14 @@ export function parseBaseFile(content: string, filePath: string): BaseFileConfig
 
 	const fileName = filePath.split('/').pop()?.replace(/\.base$/, '') || 'Base';
 	const baseTitle = fileName;
+	const parsedObj = isRecord(parsed) ? parsed : {};
+
+	const baseId =
+		typeof parsedObj.id === 'string' && parsedObj.id.trim()
+			? parsedObj.id.trim()
+			: sanitizeSlug(fileName);
 
 	const formulas: Record<string, string> = {};
-	const parsedObj = isRecord(parsed) ? parsed : {};
 
 	if (isRecord(parsedObj.formulas)) {
 		for (const [key, val] of Object.entries(parsedObj.formulas)) {
@@ -29,11 +68,31 @@ export function parseBaseFile(content: string, filePath: string): BaseFileConfig
 	}
 
 	const views: BaseViewConfig[] = [];
+	const seenIds = new Map<string, number>();
+
 	if (Array.isArray(parsedObj.views)) {
 		for (const item of parsedObj.views) {
 			if (!isRecord(item)) continue;
 			const v = item;
+
+			let viewId =
+				typeof v.id === 'string' && v.id.trim()
+					? v.id.trim()
+					: (typeof v.key === 'string' && v.key.trim() ? v.key.trim() : '');
+
+			if (!viewId) {
+				const sig = computeViewSignature(v);
+				viewId = 'view-' + generateStableHash(sig);
+			}
+
+			const count = (seenIds.get(viewId) || 0) + 1;
+			seenIds.set(viewId, count);
+			if (count > 1) {
+				viewId = `${viewId}-${count}`;
+			}
+
 			const view: BaseViewConfig = {
+				id: viewId,
 				type: typeof v.type === 'string' ? v.type : 'cards',
 				name: typeof v.name === 'string' ? v.name : 'View',
 				filters: v.filters as BaseViewConfig['filters'],
@@ -61,6 +120,7 @@ export function parseBaseFile(content: string, filePath: string): BaseFileConfig
 
 	if (views.length === 0) {
 		views.push({
+			id: 'default-view',
 			type: 'cards',
 			name: 'Default view',
 			cardSize: 180,
@@ -70,6 +130,7 @@ export function parseBaseFile(content: string, filePath: string): BaseFileConfig
 	}
 
 	return {
+		id: baseId,
 		filePath,
 		fileName,
 		baseTitle,

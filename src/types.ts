@@ -37,6 +37,7 @@ export interface FilterRule {
 }
 
 export interface BaseViewConfig {
+	id: string;
 	type: string;
 	name: string;
 	filters?: BaseFiltersConfig;
@@ -51,6 +52,7 @@ export interface BaseViewConfig {
 }
 
 export interface BaseFileConfig {
+	id: string;
 	filePath: string;
 	fileName: string;
 	baseTitle: string;

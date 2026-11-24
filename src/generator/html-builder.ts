@@ -129,6 +129,7 @@ export class HtmlBuilder {
 
     const basePayload = {
       base: {
+        id: baseConfig.id,
         title: baseConfig.fileName,
         formulas: baseConfig.formulas,
         views: baseConfig.views,
@@ -172,7 +173,7 @@ export class HtmlBuilder {
   ${cssInclude}
   ${extraCssInclude}
 </head>
-<body>
+<body data-base-id="${escapeHtml(baseConfig.id)}" data-base-name="${escapeHtml(baseConfig.fileName)}">
   ${getLucideSpriteSvg()}
 
   <!-- Navbar -->
@@ -262,12 +263,12 @@ export class HtmlBuilder {
   </nav>
 
   <!-- Main content -->
-  <main class="main-content">
-    <div class="content-status-bar">
-      <span id="itemCountBadge" class="item-count-badge">0 items</span>
+  <main class="main-content" data-view-id="${escapeHtml(firstView?.id || '')}" data-view-name="${escapeHtml(firstView?.name || '')}" data-view-type="${escapeHtml(firstView?.type || 'cards')}">
+    <div class="content-status-bar bases-status-bar">
+      <span id="itemCountBadge" class="item-count-badge bases-item-count">0 items</span>
     </div>
 
-    <div id="contentContainer"></div>
+    <div id="contentContainer" class="content-container bases-view-container"></div>
   </main>
 
   <!-- Settings drawer -->
@@ -419,7 +420,7 @@ export class HtmlBuilder {
     }
   </style>
 </head>
-<body>
+<body data-base-id="index" data-base-name="index">
   ${getLucideSpriteSvg()}
 
   <nav class="navbar">
@@ -433,7 +434,7 @@ export class HtmlBuilder {
     </div>
   </nav>
 
-  <main class="main-content">
+  <main class="main-content" data-view-id="directory" data-view-name="directory" data-view-type="directory">
     <div style="margin-top: 1.5rem;">
       <h1 style="font-size: 1.8rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">Exported bases</h1>
       <p style="color: var(--text-muted);">Select a base below to explore views and items.</p>

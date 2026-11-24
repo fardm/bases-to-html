@@ -354,7 +354,16 @@ export function getClientScript(): string {
     var view = base.views[viewIdx];
     if (!view) return;
 
+    currentViewIdx = viewIdx;
     if (viewSelect) viewSelect.value = String(viewIdx);
+
+    // Update main container attributes for CSS targeting
+    var mainEl = document.querySelector('main.main-content');
+    if (mainEl && view) {
+      mainEl.setAttribute('data-view-id', view.id || ('view-' + viewIdx));
+      mainEl.setAttribute('data-view-name', view.name || ('View ' + (viewIdx + 1)));
+      mainEl.setAttribute('data-view-type', view.type || 'cards');
+    }
 
     var cardSize = view.cardSize || 180;
     var rawRatio = typeof view.imageAspectRatio === 'number' && view.imageAspectRatio > 0 ? view.imageAspectRatio : 1.5;
@@ -366,8 +375,10 @@ export function getClientScript(): string {
     htmlRoot.style.setProperty('--css-aspect-ratio', String(cssRatio));
     htmlRoot.style.setProperty('--image-fit', imageFit);
 
+    var viewKey = view.id ? ('v_' + view.id) : ('view_' + viewIdx);
+
     // 1. Sort state
-    var savedSorts = localStorage.getItem(storagePrefix + 'view_' + viewIdx + '_sorts');
+    var savedSorts = localStorage.getItem(storagePrefix + viewKey + '_sorts');
     if (savedSorts) {
       try { activeSortRules = JSON.parse(savedSorts) || []; } catch (e) { activeSortRules = []; }
     } else if (Array.isArray(view.sort) && view.sort.length > 0) {
@@ -379,7 +390,7 @@ export function getClientScript(): string {
     }
 
     // 2. Group state
-    var savedGroup = localStorage.getItem(storagePrefix + 'view_' + viewIdx + '_group');
+    var savedGroup = localStorage.getItem(storagePrefix + viewKey + '_group');
     if (savedGroup) {
       try { activeGroupRule = JSON.parse(savedGroup); } catch (e) { activeGroupRule = null; }
     } else if (view.groupBy && view.groupBy.property) {
@@ -389,7 +400,7 @@ export function getClientScript(): string {
     }
 
     // 3. Filter state
-    var savedFilters = localStorage.getItem(storagePrefix + 'view_' + viewIdx + '_filters');
+    var savedFilters = localStorage.getItem(storagePrefix + viewKey + '_filters');
     if (savedFilters) {
       try { activeFilterRules = JSON.parse(savedFilters) || []; } catch (e) { activeFilterRules = []; }
     } else {
@@ -397,7 +408,7 @@ export function getClientScript(): string {
     }
 
     // 4. Properties order state
-    var savedOrder = localStorage.getItem(storagePrefix + 'view_' + viewIdx + '_order');
+    var savedOrder = localStorage.getItem(storagePrefix + viewKey + '_order');
     if (savedOrder) {
       try { activeOrder = JSON.parse(savedOrder) || []; } catch (e) { activeOrder = []; }
     } else if (Array.isArray(view.order) && view.order.length > 0) {
@@ -476,23 +487,28 @@ export function getClientScript(): string {
     return rules;
   }
 
+  function getViewStorageKey() {
+    var view = base.views[currentViewIdx];
+    return view && view.id ? ('v_' + view.id) : ('view_' + currentViewIdx);
+  }
+
   function saveSortState() {
-    localStorage.setItem(storagePrefix + 'view_' + currentViewIdx + '_sorts', JSON.stringify(activeSortRules));
+    localStorage.setItem(storagePrefix + getViewStorageKey() + '_sorts', JSON.stringify(activeSortRules));
     updateToolbarActiveStates();
   }
 
   function saveGroupState() {
-    localStorage.setItem(storagePrefix + 'view_' + currentViewIdx + '_group', JSON.stringify(activeGroupRule));
+    localStorage.setItem(storagePrefix + getViewStorageKey() + '_group', JSON.stringify(activeGroupRule));
     updateToolbarActiveStates();
   }
 
   function saveFilterState() {
-    localStorage.setItem(storagePrefix + 'view_' + currentViewIdx + '_filters', JSON.stringify(activeFilterRules));
+    localStorage.setItem(storagePrefix + getViewStorageKey() + '_filters', JSON.stringify(activeFilterRules));
     updateToolbarActiveStates();
   }
 
   function saveOrderState() {
-    localStorage.setItem(storagePrefix + 'view_' + currentViewIdx + '_order', JSON.stringify(activeOrder));
+    localStorage.setItem(storagePrefix + getViewStorageKey() + '_order', JSON.stringify(activeOrder));
   }
 
   // =========================================================================
@@ -1234,15 +1250,16 @@ export function getClientScript(): string {
         var grpItems = groups.get(grpKey);
         if (!grpItems) return;
         var grpSection = document.createElement('section');
-        grpSection.className = 'group-section';
+        grpSection.className = 'group-section bases-group';
+        grpSection.setAttribute('data-group-value', grpKey);
 
         var grpHeader = document.createElement('div');
-        grpHeader.className = 'group-header';
-        grpHeader.innerHTML = '<span class="group-title">' + escapeHtml(grpKey) + '</span><span class="group-count">' + grpItems.length + '</span>';
+        grpHeader.className = 'group-header bases-group-header';
+        grpHeader.innerHTML = '<span class="group-title bases-group-title">' + escapeHtml(grpKey) + '</span><span class="group-count bases-group-count">' + grpItems.length + '</span>';
         grpSection.appendChild(grpHeader);
 
         var grid = document.createElement('div');
-        grid.className = 'cards-grid';
+        grid.className = 'cards-grid bases-cards-grid';
         grpItems.forEach(function(item) {
           grid.appendChild(createCardElement(item));
         });
@@ -1252,7 +1269,7 @@ export function getClientScript(): string {
       });
     } else {
       var grid = document.createElement('div');
-      grid.className = 'cards-grid';
+      grid.className = 'cards-grid bases-cards-grid';
       filtered.forEach(function(item) {
         grid.appendChild(createCardElement(item));
       });
@@ -1262,15 +1279,17 @@ export function getClientScript(): string {
 
   function createCardElement(item) {
     var card = document.createElement('div');
-    card.className = 'base-card';
+    card.className = 'base-card bases-card';
+    if (item.id) card.setAttribute('data-item-id', item.id);
+    if (item.title) card.setAttribute('data-item-title', item.title);
 
     var imgWrapper = document.createElement('div');
-    imgWrapper.className = 'card-image-wrapper';
+    imgWrapper.className = 'card-image-wrapper bases-card-image-wrapper';
 
     var imgSrc = item.coverImageBase64 || item.coverAssetRelativePath || item.coverImage;
     if (imgSrc) {
       var img = document.createElement('img');
-      img.className = 'card-image';
+      img.className = 'card-image bases-card-image';
       img.src = imgSrc;
       img.alt = item.title;
       img.loading = 'lazy';
@@ -1285,7 +1304,7 @@ export function getClientScript(): string {
     card.appendChild(imgWrapper);
 
     var body = document.createElement('div');
-    body.className = 'card-body';
+    body.className = 'card-body bases-card-body';
 
     var order = activeOrder.length > 0 ? activeOrder : ['file.name', 'rating'];
     var renderedTitle = false;
@@ -1296,35 +1315,36 @@ export function getClientScript(): string {
 
       if (prop === 'file.name' || prop === 'name') {
         var titleEl = document.createElement('div');
-        titleEl.className = 'card-title';
+        titleEl.className = 'card-title bases-card-title';
         titleEl.textContent = String(val);
         titleEl.setAttribute('dir', 'auto');
         body.appendChild(titleEl);
         renderedTitle = true;
       } else if (prop === 'badge' || prop === 'tags' || prop === 'file.tags') {
         var badgeEl = document.createElement('div');
-        badgeEl.className = 'card-badge';
+        badgeEl.className = 'card-badge bases-card-badge';
         badgeEl.textContent = Array.isArray(val) ? val.join(' ') : String(val);
         badgeEl.setAttribute('dir', 'auto');
         body.appendChild(badgeEl);
       } else if (prop.includes('starRating') || (typeof val === 'string' && val.includes('★'))) {
         var starEl = document.createElement('div');
-        starEl.className = 'card-rating';
+        starEl.className = 'card-rating bases-card-rating';
         starEl.textContent = String(val);
         body.appendChild(starEl);
       } else {
         var row = document.createElement('div');
-        row.className = 'card-prop-item';
+        row.className = 'card-prop-item bases-card-property';
         var cleanKey = prop.replace(/^formula\\./, '').replace(/^note\\./, '');
+        row.setAttribute('data-property', cleanKey);
         var displayVal = Array.isArray(val) ? val.join(', ') : String(val);
-        row.innerHTML = '<span class="card-prop-key">' + escapeHtml(cleanKey) + '</span><span class="card-prop-val" dir="auto">' + escapeHtml(displayVal) + '</span>';
+        row.innerHTML = '<span class="card-prop-key bases-property-key">' + escapeHtml(cleanKey) + '</span><span class="card-prop-val bases-property-value" dir="auto">' + escapeHtml(displayVal) + '</span>';
         body.appendChild(row);
       }
     });
 
     if (!renderedTitle) {
       var fallbackTitle = document.createElement('div');
-      fallbackTitle.className = 'card-title';
+      fallbackTitle.className = 'card-title bases-card-title';
       fallbackTitle.textContent = item.title;
       fallbackTitle.setAttribute('dir', 'auto');
       body.insertBefore(fallbackTitle, body.firstChild);
@@ -1341,7 +1361,7 @@ export function getClientScript(): string {
 
   function createPlaceholder() {
     var ph = document.createElement('div');
-    ph.className = 'card-image-placeholder';
+    ph.className = 'card-image-placeholder bases-card-image-placeholder';
     ph.appendChild(createIconSvg('image', 'b2h-icon-xl'));
     return ph;
   }
