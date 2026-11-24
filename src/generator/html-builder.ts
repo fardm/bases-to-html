@@ -15,7 +15,11 @@ export class HtmlBuilder {
     this.options = options;
   }
 
-  buildSinglePage(baseConfig: BaseFileConfig, items: NoteItem[]): string {
+  buildSinglePage(
+    baseConfig: BaseFileConfig,
+    items: NoteItem[],
+    rootHref = 'index.html',
+  ): string {
     const customCss = this.options.customCss || '';
     const css = getClientCss(customCss);
     const js = getClientScript();
@@ -26,7 +30,7 @@ export class HtmlBuilder {
       items,
       cssInline: css,
       jsInline: js,
-      rootHref: '#',
+      rootHref,
     });
   }
 
