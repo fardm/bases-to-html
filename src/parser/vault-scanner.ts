@@ -10,6 +10,7 @@ import {
 	BaseFileConfig,
 	ExportFormat,
 	ExportScope,
+	ExportedDataScope,
 	NoteItem,
 	PropertyMetadata,
 	PropertyType,
@@ -41,6 +42,7 @@ export class VaultScanner {
 		baseConfig: BaseFileConfig,
 		scope: ExportScope,
 		format: ExportFormat,
+		exportedData: ExportedDataScope = 'all',
 	): Promise<ScannedVaultData> {
 		const configDir = this.app.vault.configDir;
 		const markdownFiles = this.app.vault.getMarkdownFiles().filter(
@@ -90,20 +92,22 @@ export class VaultScanner {
 				computedFormulas: {},
 			};
 
-			// Check if this note matches at least one view in the base
-			let matchesAnyView = false;
-			for (const view of baseConfig.views) {
-				if (!view.filters) {
-					matchesAnyView = true;
-					break;
+			// When exportedData is 'filtered', exclude notes that do not match current view filters
+			if (exportedData === 'filtered') {
+				let matchesAnyView = false;
+				for (const view of baseConfig.views) {
+					if (!view.filters) {
+						matchesAnyView = true;
+						break;
+					}
+					if (evaluateFilter(view.filters, context)) {
+						matchesAnyView = true;
+						break;
+					}
 				}
-				if (evaluateFilter(view.filters, context)) {
-					matchesAnyView = true;
-					break;
-				}
-			}
 
-			if (!matchesAnyView) continue;
+				if (!matchesAnyView) continue;
+			}
 
 			// Track property types
 			for (const [key, val] of Object.entries(frontmatter)) {

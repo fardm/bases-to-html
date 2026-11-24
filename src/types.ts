@@ -1,5 +1,6 @@
 export type ExportFormat = 'single' | 'multi';
 export type ExportScope = 'bases-only' | 'properties-only' | 'full';
+export type ExportedDataScope = 'all' | 'filtered';
 export type PageWidth = 'full' | 'normal' | 'narrow';
 export type ThemeMode = 'light' | 'dark';
 export type PropertyType = 'text' | 'number' | 'date' | 'checkbox' | 'list' | 'link';
@@ -84,6 +85,7 @@ export interface ExportOptions {
 	baseFilePaths: string[];
 	exportFormat: ExportFormat;
 	exportScope: ExportScope;
+	exportedData: ExportedDataScope;
 	font: string;
 	customCss: string;
 	outputLocation: string;

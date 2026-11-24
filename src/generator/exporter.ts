@@ -54,6 +54,7 @@ export class Exporter {
 				baseConfig,
 				options.exportScope,
 				options.exportFormat,
+				options.exportedData,
 			);
 			scannedBases.push(scanned);
 		}

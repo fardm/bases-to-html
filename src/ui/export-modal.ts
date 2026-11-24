@@ -1,7 +1,8 @@
 import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile, setIcon } from 'obsidian';
 import { Exporter } from '../generator/exporter';
 import type BasesToHtmlPlugin from '../main';
-import { ExportFormat, ExportOptions, ExportScope } from '../types';
+import { ExportFormat, ExportOptions, ExportScope, ExportedDataScope } from '../types';
+import { renderExportedDataRadioGroup } from './exported-data-radio';
 import { renderNoteContentRadioGroup } from './note-content-radio';
 
 class VaultCssPickerModal extends FuzzySuggestModal<TFile> {
@@ -33,6 +34,7 @@ export class ExportModal extends Modal {
 	private documentTitle: string;
 	private exportFormat: ExportFormat;
 	private exportScope: ExportScope;
+	private exportedData: ExportedDataScope;
 	private font: string;
 	private customCss: string;
 	private cssSource: string;
@@ -50,6 +52,7 @@ export class ExportModal extends Modal {
 		this.exportScope = (rawScope === 'all' || rawScope === 'full')
 			? 'full'
 			: (rawScope === 'properties-only' ? 'properties-only' : 'bases-only');
+		this.exportedData = defaults.defaultExportedData || 'all';
 		this.font = defaults.defaultFont || 'vazirmatn';
 		this.customCss = defaults.customCss || '';
 		this.cssSource = this.customCss.trim() ? 'Default settings' : 'None';
@@ -229,7 +232,17 @@ export class ExportModal extends Modal {
 					}),
 			);
 
-		// 3.4 Note Content Section (Radio Group)
+		// 3.4 Exported Data Section (Radio Group)
+		renderExportedDataRadioGroup(
+			contentEl,
+			this.exportedData,
+			(val) => {
+				this.exportedData = val;
+			},
+			'exportModalExportedData',
+		);
+
+		// 3.5 Note Content Section (Radio Group)
 		renderNoteContentRadioGroup(
 			contentEl,
 			this.exportScope,
@@ -239,7 +252,7 @@ export class ExportModal extends Modal {
 			'exportModalNoteContent',
 		);
 
-		// 3.5 Font selection
+		// 3.6 Font selection
 		new Setting(contentEl)
 			.setName('Font')
 			.setDesc('Typography font loaded via Google fonts CDN in the HTML output.')
@@ -411,6 +424,7 @@ export class ExportModal extends Modal {
 			baseFilePaths: Array.from(this.selectedFiles),
 			exportFormat: this.exportFormat,
 			exportScope: this.exportScope,
+			exportedData: this.exportedData,
 			font: this.font,
 			customCss: this.customCss,
 			outputLocation: this.plugin.settings.defaultOutputFolder || '',

@@ -141,6 +141,7 @@ export class HtmlBuilder {
         propertyTypes: baseConfig.propertyTypes || {},
       },
       exportScope: this.options.exportScope || 'full',
+      exportedData: this.options.exportedData || 'all',
       items,
     };
 

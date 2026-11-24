@@ -1,12 +1,14 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import type BasesToHtmlPlugin from './main';
-import { ExportFormat, ExportScope } from './types';
+import { ExportFormat, ExportScope, ExportedDataScope } from './types';
+import { renderExportedDataRadioGroup } from './ui/exported-data-radio';
 import { renderNoteContentRadioGroup } from './ui/note-content-radio';
 
 export interface BasesToHtmlSettings {
 	defaultTitle: string;
 	defaultFormat: ExportFormat;
 	defaultScope: ExportScope;
+	defaultExportedData: ExportedDataScope;
 	defaultFont: string;
 	defaultOutputFolder: string;
 	openAfterExport: boolean;
@@ -17,6 +19,7 @@ export const DEFAULT_SETTINGS: BasesToHtmlSettings = {
 	defaultTitle: 'My archive',
 	defaultFormat: 'single',
 	defaultScope: 'full',
+	defaultExportedData: 'all',
 	defaultFont: 'vazirmatn',
 	defaultOutputFolder: '',
 	openAfterExport: true,
@@ -67,6 +70,16 @@ export class BasesToHtmlSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					}),
 			);
+
+		renderExportedDataRadioGroup(
+			containerEl,
+			this.plugin.settings.defaultExportedData,
+			(val) => {
+				this.plugin.settings.defaultExportedData = val;
+				void this.plugin.saveSettings();
+			},
+			'settingsDefaultExportedData',
+		);
 
 		renderNoteContentRadioGroup(
 			containerEl,
