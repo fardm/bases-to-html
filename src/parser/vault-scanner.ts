@@ -11,6 +11,8 @@ import {
 	ExportFormat,
 	ExportScope,
 	NoteItem,
+	PropertyMetadata,
+	PropertyType,
 } from '../types';
 import {
 	evaluateFilter,
@@ -46,6 +48,7 @@ export class VaultScanner {
 
 		const items: NoteItem[] = [];
 		const imageFilesToCopy = new Map<string, TFile>();
+		const propertyTypeOccurrences = new Map<string, Map<PropertyType, number>>();
 
 		for (const file of markdownFiles) {
 			const cache = this.app.metadataCache.getFileCache(file);
@@ -95,6 +98,18 @@ export class VaultScanner {
 			}
 
 			if (!matchesAnyView) continue;
+
+			// Track property types
+			for (const [key, val] of Object.entries(frontmatter)) {
+				const inferred = inferTypeFromValue(val);
+				if (!propertyTypeOccurrences.has(key)) {
+					propertyTypeOccurrences.set(key, new Map());
+				}
+				const counts = propertyTypeOccurrences.get(key);
+				if (counts) {
+					counts.set(inferred, (counts.get(inferred) || 0) + 1);
+				}
+			}
 
 			// Compute all formulas for this note
 			const computedFormulas: Record<string, unknown> = {};
@@ -151,6 +166,44 @@ export class VaultScanner {
 
 			items.push(item);
 		}
+
+		// Compile property metadata
+		const propertyTypes: Record<string, PropertyMetadata> = {
+			file: { id: 'file', name: 'file', type: 'text', icon: '📄' },
+			'file.name': { id: 'file.name', name: 'file.name', type: 'text', icon: '📄' },
+			'file.tags': { id: 'file.tags', name: 'file.tags', type: 'list', icon: '🏷' },
+		};
+
+		for (const [propName, counts] of propertyTypeOccurrences.entries()) {
+			let dominantType: PropertyType = 'text';
+			let maxCount = -1;
+			for (const [t, cnt] of counts.entries()) {
+				if (cnt > maxCount) {
+					maxCount = cnt;
+					dominantType = t;
+				}
+			}
+			propertyTypes[propName] = {
+				id: propName,
+				name: propName,
+				type: dominantType,
+				icon: getIconForType(dominantType),
+			};
+		}
+
+		// Include formula properties
+		if (baseConfig.formulas) {
+			for (const fKey of Object.keys(baseConfig.formulas)) {
+				propertyTypes[`formula.${fKey}`] = {
+					id: `formula.${fKey}`,
+					name: `formula.${fKey}`,
+					type: 'text',
+					icon: '🧮',
+				};
+			}
+		}
+
+		baseConfig.propertyTypes = propertyTypes;
 
 		return {
 			baseConfig,
@@ -217,6 +270,49 @@ export class VaultScanner {
 		}
 
 		return {};
+	}
+}
+
+function inferTypeFromValue(val: unknown): PropertyType {
+	if (val === null || val === undefined) return 'text';
+	if (typeof val === 'boolean') return 'checkbox';
+	if (typeof val === 'number') return 'number';
+	if (Array.isArray(val)) return 'list';
+
+	if (typeof val === 'string') {
+		const trimmed = val.trim();
+		// Wiki link [[link]]
+		if (trimmed.startsWith('[[') && trimmed.endsWith(']]')) {
+			return 'link';
+		}
+		// Number
+		if (!isNaN(Number(trimmed)) && trimmed !== '') {
+			return 'number';
+		}
+		// Date ISO format (YYYY-MM-DD)
+		if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+			return 'date';
+		}
+	}
+
+	return 'text';
+}
+
+function getIconForType(type: PropertyType): string {
+	switch (type) {
+		case 'number':
+			return '🔢';
+		case 'date':
+			return '📅';
+		case 'checkbox':
+			return '☑';
+		case 'list':
+			return '🏷';
+		case 'link':
+			return '🔗';
+		case 'text':
+		default:
+			return '☰';
 	}
 }
 

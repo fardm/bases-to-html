@@ -147,6 +147,7 @@ export class HtmlBuilder {
 				title: baseConfig.fileName,
 				formulas: baseConfig.formulas,
 				views: baseConfig.views,
+				propertyTypes: baseConfig.propertyTypes || {},
 			},
 			items,
 		};
@@ -207,22 +208,66 @@ export class HtmlBuilder {
       </div>
 
       <div class="nav-controls">
+        <!-- Sort Button & Popover -->
+        <div class="toolbar-btn-group">
+          <button id="sortToggleBtn" class="toolbar-btn" title="Sort items">
+            <span>⇅</span>
+            <span>Sort</span>
+            <span id="sortCountBadge" class="toolbar-btn-badge" style="display:none;">0</span>
+          </button>
+          <div id="sortPopover" class="bases-popover popover-align-left">
+            <div class="popover-header">Sort by</div>
+            <div id="sortRulesList" class="popover-rules-list"></div>
+            <button id="addSortBtn" class="popover-add-btn">+ Add sort</button>
+          </div>
+        </div>
+
+        <!-- Group Button & Popover -->
+        <div class="toolbar-btn-group">
+          <button id="groupToggleBtn" class="toolbar-btn" title="Group items">
+            <span>🗂</span>
+            <span>Group</span>
+          </button>
+          <div id="groupPopover" class="bases-popover popover-align-left">
+            <div class="popover-header">Group by</div>
+            <div id="groupRulesList" class="popover-rules-list"></div>
+            <button id="addGroupBtn" class="popover-add-btn">+ Add group</button>
+          </div>
+        </div>
+
+        <!-- Filter Button & Popover -->
+        <div class="toolbar-btn-group">
+          <button id="filterToggleBtn" class="toolbar-btn" title="Filter items">
+            <span>🝖</span>
+            <span>Filter</span>
+            <span id="filterCountBadge" class="toolbar-btn-badge" style="display:none;">0</span>
+          </button>
+          <div id="filterPopover" class="bases-popover popover-align-left" style="min-width: 440px;">
+            <div class="popover-header">Filter</div>
+            <div id="filterRulesList" class="popover-rules-list"></div>
+            <button id="addFilterBtn" class="popover-add-btn">+ Add filter</button>
+          </div>
+        </div>
+
+        <!-- Properties Button & Popover -->
+        <div class="toolbar-btn-group">
+          <button id="propertiesToggleBtn" class="toolbar-btn" title="Shown properties">
+            <span>⋮≡</span>
+            <span>Properties</span>
+          </button>
+          <div id="propertiesPopover" class="bases-popover popover-align-left">
+            <div class="popover-header">Card properties</div>
+            <div id="propertiesList" class="popover-rules-list"></div>
+          </div>
+        </div>
+
+        <!-- Search Box -->
         <div class="search-box">
           <input type="text" id="searchInput" class="search-input" placeholder="Search..." autocomplete="off">
           <button id="searchClearBtn" class="search-clear-btn" title="Clear search">&times;</button>
         </div>
 
-        <button id="filterToggleBtn" class="toolbar-btn" title="Toggle filters">
-          <span>🔍</span>
-          <span>Filters</span>
-        </button>
-
-        <select id="sortSelect" class="view-select" title="Sort property"></select>
-        <button id="sortDirBtn" class="toolbar-btn" title="Toggle sort direction">▼</button>
-
-        <select id="groupSelect" class="view-select" title="Group property"></select>
-        <button id="groupDirBtn" class="toolbar-btn" title="Toggle group direction">▼</button>
-
+        <!-- Settings Button -->
         <button id="settingsBtn" class="toolbar-btn" title="Display settings">
           <span>⚙️</span>
         </button>
@@ -230,20 +275,9 @@ export class HtmlBuilder {
     </div>
   </nav>
 
-  <!-- Filter dropdown panel -->
-  <div id="filterPanel" class="filter-panel" style="max-width: var(--container-max-width); margin: 1rem auto 0; padding: 1rem 1.25rem;">
-    <div>
-      <div class="filter-group-title">Filter by tags</div>
-      <div id="filterTagsContainer" class="filter-tags-list"></div>
-    </div>
-  </div>
-
   <!-- Main content -->
   <main class="main-content">
-    <div class="filter-action-bar">
-      <div class="action-bar-left">
-        <div id="activeFiltersBar" style="display:flex; gap:0.4rem; flex-wrap:wrap;"></div>
-      </div>
+    <div class="content-status-bar">
       <span id="itemCountBadge" class="item-count-badge">0 items</span>
     </div>
 

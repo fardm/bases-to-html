@@ -2,6 +2,14 @@ export type ExportFormat = 'single' | 'multi';
 export type ExportScope = 'all' | 'bases-only';
 export type PageWidth = 'full' | 'normal' | 'narrow';
 export type ThemeMode = 'light' | 'dark';
+export type PropertyType = 'text' | 'number' | 'date' | 'checkbox' | 'list' | 'link';
+
+export interface PropertyMetadata {
+	id: string;
+	name: string;
+	type: PropertyType;
+	icon?: string;
+}
 
 export interface BaseSortConfig {
 	property: string;
@@ -19,6 +27,14 @@ export interface BaseFilterGroup {
 }
 
 export type BaseFiltersConfig = string | BaseFilterGroup | Array<string | BaseFilterGroup>;
+
+export interface FilterRule {
+	id: string;
+	conjunction?: 'and' | 'or';
+	property: string;
+	operator: string;
+	value: unknown;
+}
 
 export interface BaseViewConfig {
 	type: string;
@@ -40,6 +56,7 @@ export interface BaseFileConfig {
 	baseTitle: string;
 	formulas?: Record<string, string>;
 	views: BaseViewConfig[];
+	propertyTypes?: Record<string, PropertyMetadata>;
 }
 
 export interface NoteItem {
