@@ -8,7 +8,7 @@ import {
 import { parseBaseFile } from '../parser/base-parser';
 import { ScannedVaultData, VaultScanner } from '../parser/vault-scanner';
 import { ExportOptions, NoteItem } from '../types';
-import { HtmlBuilder } from './html-builder';
+import { HtmlBuilder, sanitizeSlug } from './html-builder';
 
 export class Exporter {
 	private app: App;
@@ -80,21 +80,17 @@ export class Exporter {
 				for (const scanned of scannedBases) {
 					const { baseConfig, items } = scanned;
 					const htmlContent = htmlBuilder.buildSinglePage(baseConfig, items);
-					const slug = sanitizeFolderName(baseConfig.fileName);
+					const slug = sanitizeSlug(baseConfig.fileName);
 					const outputPath = normalizePath(`${targetDir}/${slug}.html`);
 					await this.writeFileSafe(outputPath, htmlContent);
 					multiFileData.push({ config: baseConfig, items });
 				}
 
-				// Build directory index linking to the single page files
-				const indexBuilder = new HtmlBuilder(options);
-				const generatedFiles = indexBuilder.buildMultiFile(multiFileData);
-				const indexFile = generatedFiles.find((f) => f.relativePath === 'index.html');
-				if (indexFile) {
-					const indexPath = normalizePath(`${targetDir}/index.html`);
-					await this.writeFileSafe(indexPath, indexFile.content);
-					mainEntryPath = indexPath;
-				}
+				// Build directory index linking to the single page files (with self-contained inlined styles)
+				const indexHtml = htmlBuilder.buildDirectoryIndex(multiFileData, true);
+				const indexPath = normalizePath(`${targetDir}/index.html`);
+				await this.writeFileSafe(indexPath, indexHtml);
+				mainEntryPath = indexPath;
 			}
 		} else {
 			// Multi-file format

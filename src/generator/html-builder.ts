@@ -69,7 +69,7 @@ export class HtmlBuilder {
       });
     } else {
       // Generate Directory index.html
-      const indexHtml = this.generateIndexDirectoryHtml(exportedBases);
+      const indexHtml = this.generateIndexDirectoryHtml(exportedBases, false);
       files.push({
         relativePath: 'index.html',
         content: indexHtml,
@@ -338,11 +338,39 @@ export class HtmlBuilder {
 </html>`;
   }
 
+  buildDirectoryIndex(
+    exportedBases: Array<{ config: BaseFileConfig; items: NoteItem[] }>,
+    isSinglePage = false,
+  ): string {
+    return this.generateIndexDirectoryHtml(exportedBases, isSinglePage);
+  }
+
   private generateIndexDirectoryHtml(
     exportedBases: Array<{ config: BaseFileConfig; items: NoteItem[] }>,
+    isSinglePage = false,
   ): string {
     const title = this.options.documentTitle || 'Bases Archive';
     const font = this.options.font || 'vazirmatn';
+    const customCss = this.options.customCss || '';
+
+    const fontLink = `<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">`;
+
+    const cssInclude = isSinglePage
+      ? `<style>\n${getClientCss(customCss)}\n</style>`
+      : `<link rel="stylesheet" href="./assets/css/styles.css">`;
+
+    const initScript = `<script>
+  (function() {
+    var savedTheme = localStorage.getItem('b2h_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    var savedFont = localStorage.getItem('b2h_font') || '${font}';
+    document.documentElement.setAttribute('data-font', savedFont);
+    var savedWidth = localStorage.getItem('b2h_width') || 'normal';
+    document.documentElement.setAttribute('data-width', savedWidth);
+  })();
+</script>`;
 
     const cardsHtml = exportedBases
       .map(({ config, items }) => {
@@ -369,10 +397,8 @@ export class HtmlBuilder {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css">
+  ${fontLink}
+  ${cssInclude}
   <style>
     .directory-grid {
       display: grid;
@@ -419,6 +445,7 @@ export class HtmlBuilder {
       gap: 0.5rem;
     }
   </style>
+  ${initScript}
 </head>
 <body data-base-id="index" data-base-name="index">
   ${getLucideSpriteSvg()}
@@ -453,7 +480,7 @@ export class HtmlBuilder {
   }
 }
 
-function sanitizeSlug(name: string): string {
+export function sanitizeSlug(name: string): string {
   return (
     name
       .toLowerCase()
