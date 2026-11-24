@@ -1,92 +1,46 @@
-# Obsidian Sample Plugin
+# Bases to HTML (Obsidian Plugin)
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Export your Obsidian **Bases** views into standalone, interactive, and responsive HTML pages perfect for static website hosting or offline browsing.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
+- **Full Bases Fidelity**:
+  - Exports gallery/cards view with exact card sizes, aspect ratios, image cover fits, and custom property ordering.
+  - Multi-view support: If a `.base` file contains multiple views (e.g. Books, Movies, Series, Medias), all views are exported and switchable via an interactive dropdown.
+  - Default view filters, sorting, and grouping settings are preserved on initial load.
+- **Interactive Client-Side Engine**:
+  - Live full-text search across titles, tags, and metadata properties.
+  - Dynamic tag and property filtering.
+  - Client-side sorting (ASC / DESC).
+  - Client-side grouping (e.g. group by rating, genre, date) with section counters.
+  - Zero external JavaScript runtime dependencies — fast and standalone.
+- **Customizable UI & Themes**:
+  - Built-in Light and Dark themes.
+  - Responsive Page Width switcher (Full, Normal, Narrow).
+  - Typography font switcher with Google Fonts (Vazirmatn for multilingual/Persian support, Inter, System fonts).
+  - Persistence: User preferences (theme, width, font, view, filters) persist in browser `localStorage`.
+- **Note Detail Modals**:
+  - Option to include full rendered Markdown notes with clickable cards.
+- **Export Formats**:
+  - **Single Page**: Self-contained HTML with inlined CSS, JS, and Base64-encoded cover images.
+  - **Multi-file**: Organized directory with `index.html`, `assets/css/`, `assets/js/`, and `assets/images/`.
+- **Custom CSS**:
+  - Apply custom styling globally or per-base.
 
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and outputs a Notice on click.
-- Registers a global interval which logs 'setInterval' to the console.
+## Usage
 
-## First time developing plugins?
+1. Open the Command Palette in Obsidian (`Ctrl+P` or `Cmd+P`).
+2. Search for **Bases to HTML: Export Bases to HTML** (or click the layout icon in the ribbon).
+3. Configure your export settings:
+   - **Document Title**: Document and site name.
+   - **Select Base Files**: Choose one or multiple `.base` files to export.
+   - **Export Format**: Choose Single Page or Multi-file.
+   - **Export Scope**: Choose *Include Notes* (full notes rendered into modals) or *Bases Only*.
+   - **Font**: Select preferred typography.
+   - **Output Location**: Specify target folder in vault.
+   - **Open Exported Files**: Check to automatically preview the exported HTML.
+4. Click **Export HTML**.
 
-Quick starting guide for new plugin devs:
+## License
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `src/main.ts` to `main.js`.
-- Make changes to `src/main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
-
-## Releasing new releases
-
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
-
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
-
-## Adding your plugin to the community plugin list
-
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
-
-## How to use
-
-- Clone this repo.
-- Make sure your NodeJS is at least v18 (`node --version`).
-- `npm i` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint
-
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code.
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-	"fundingUrl": "https://buymeacoffee.com"
-}
-```
-
-If you have multiple URLs, you can also do:
-
-```json
-{
-	"fundingUrl": {
-		"Buy Me a Coffee": "https://buymeacoffee.com",
-		"GitHub Sponsor": "https://github.com/sponsors",
-		"Patreon": "https://www.patreon.com/"
-	}
-}
-```
-
-## API Documentation
-
-See https://docs.obsidian.md
+MIT

@@ -1,8 +1,47 @@
-/*
+/* Bases to HTML Plugin Styles */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.bases-to-html-export-modal {
+  max-width: 650px;
+}
 
-If your plugin does not need CSS, delete this file.
+.b2h-base-select-section {
+  margin: 1rem 0;
+}
 
-*/
+.b2h-base-select-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.b2h-base-search-input {
+  flex: 1;
+}
+
+.b2h-file-list-container {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, 6px);
+  padding: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.b2h-file-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.b2h-file-checkbox-label {
+  cursor: pointer;
+  user-select: none;
+}
+
+.b2h-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}

@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
+	"name": "bases-to-html",
 	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "Export Obsidian Bases views to standalone, interactive, and responsive HTML pages.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
