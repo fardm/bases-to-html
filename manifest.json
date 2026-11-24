@@ -5,8 +5,7 @@
 	"minAppVersion": "1.4.0",
 	"description": "Export Obsidian Bases views to standalone, interactive, and responsive HTML pages for static hosting.",
 	"author": "iFard",
-	"authorUrl": "https://github.com/ifard/bases-to-html",
+	"authorUrl": "https://github.com/fardm/bases-to-html",
 	"fundingUrl": "",
 	"isDesktopOnly": false
 }
-

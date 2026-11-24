@@ -329,7 +329,7 @@ export class HtmlBuilder {
 
   <!-- Footer -->
   <footer class="site-footer">
-    Powered by <a href="https://github.com/ifard/bases-to-html" target="_blank" rel="noopener">Bases to HTML</a>
+    Powered by <a href="https://github.com/fardm/bases-to-html" target="_blank" rel="noopener">Bases to HTML</a>
   </footer>
 
   <!-- Data island -->
@@ -477,7 +477,7 @@ export class HtmlBuilder {
   </main>
 
   <footer class="site-footer">
-    Powered by <a href="https://github.com/ifard/bases-to-html" target="_blank" rel="noopener">Bases to HTML</a>
+    Powered by <a href="https://github.com/fardm/bases-to-html" target="_blank" rel="noopener">Bases to HTML</a>
   </footer>
 </body>
 </html>`;
