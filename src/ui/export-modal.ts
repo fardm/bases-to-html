@@ -2,6 +2,7 @@ import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile, setIcon } from '
 import { Exporter } from '../generator/exporter';
 import type BasesToHtmlPlugin from '../main';
 import { ExportFormat, ExportOptions, ExportScope } from '../types';
+import { renderNoteContentRadioGroup } from './note-content-radio';
 
 class VaultCssPickerModal extends FuzzySuggestModal<TFile> {
 	private onSelect: (file: TFile) => void;
@@ -45,7 +46,10 @@ export class ExportModal extends Modal {
 		const defaults = plugin.settings;
 		this.documentTitle = defaults.defaultTitle || 'My archive';
 		this.exportFormat = defaults.defaultFormat || 'single';
-		this.exportScope = defaults.defaultScope || 'all';
+		const rawScope = defaults.defaultScope as string;
+		this.exportScope = (rawScope === 'all' || rawScope === 'full')
+			? 'full'
+			: (rawScope === 'properties-only' ? 'properties-only' : 'bases-only');
 		this.font = defaults.defaultFont || 'vazirmatn';
 		this.customCss = defaults.customCss || '';
 		this.cssSource = this.customCss.trim() ? 'Default settings' : 'None';
@@ -225,21 +229,15 @@ export class ExportModal extends Modal {
 					}),
 			);
 
-		// 3.4 Export scope
-		new Setting(contentEl)
-			.setName('Export scope')
-			.setDesc(
-				'Include notes renders full Markdown notes in interactive modals. Bases only exports base cards and metadata.',
-			)
-			.addDropdown((drop) =>
-				drop
-					.addOption('all', 'Include notes (full content in modals)')
-					.addOption('bases-only', 'Bases only (cards view only)')
-					.setValue(this.exportScope)
-					.onChange((val) => {
-						this.exportScope = val as ExportScope;
-					}),
-			);
+		// 3.4 Note Content Section (Radio Group)
+		renderNoteContentRadioGroup(
+			contentEl,
+			this.exportScope,
+			(val) => {
+				this.exportScope = val;
+			},
+			'exportModalNoteContent',
+		);
 
 		// 3.5 Font selection
 		new Setting(contentEl)

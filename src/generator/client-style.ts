@@ -625,6 +625,21 @@ body {
   background-color: var(--bg-card-hover);
 }
 
+.base-card.bases-card-static {
+  cursor: default !important;
+}
+
+.base-card.bases-card-static:hover {
+  transform: none !important;
+  box-shadow: var(--shadow-sm) !important;
+  border-color: var(--border-color) !important;
+  background-color: var(--bg-card) !important;
+}
+
+.base-card.bases-card-static:hover .card-image {
+  transform: none !important;
+}
+
 .card-image-wrapper {
   width: 100%;
   aspect-ratio: var(--css-aspect-ratio, 1 / var(--aspect-ratio, 1.5));
@@ -850,6 +865,15 @@ body {
 .table-cell-title:hover {
   color: var(--interactive-accent);
   text-decoration: underline;
+}
+
+.table-cell-title-static {
+  cursor: default !important;
+}
+
+.table-cell-title-static:hover {
+  color: var(--text-primary) !important;
+  text-decoration: none !important;
 }
 
 .bases-tag-pill {

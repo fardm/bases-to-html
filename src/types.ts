@@ -1,5 +1,5 @@
 export type ExportFormat = 'single' | 'multi';
-export type ExportScope = 'all' | 'bases-only';
+export type ExportScope = 'bases-only' | 'properties-only' | 'full';
 export type PageWidth = 'full' | 'normal' | 'narrow';
 export type ThemeMode = 'light' | 'dark';
 export type PropertyType = 'text' | 'number' | 'date' | 'checkbox' | 'list' | 'link';

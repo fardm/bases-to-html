@@ -38,6 +38,9 @@ export default class BasesToHtmlPlugin extends Plugin {
 			DEFAULT_SETTINGS,
 			(await this.loadData()) as Partial<BasesToHtmlSettings>,
 		);
+		if ((this.settings.defaultScope as string) === 'all') {
+			this.settings.defaultScope = 'full';
+		}
 	}
 
 	async saveSettings() {

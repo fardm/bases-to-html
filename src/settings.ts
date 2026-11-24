@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import type BasesToHtmlPlugin from './main';
 import { ExportFormat, ExportScope } from './types';
+import { renderNoteContentRadioGroup } from './ui/note-content-radio';
 
 export interface BasesToHtmlSettings {
 	defaultTitle: string;
@@ -15,7 +16,7 @@ export interface BasesToHtmlSettings {
 export const DEFAULT_SETTINGS: BasesToHtmlSettings = {
 	defaultTitle: 'My archive',
 	defaultFormat: 'single',
-	defaultScope: 'all',
+	defaultScope: 'full',
 	defaultFont: 'vazirmatn',
 	defaultOutputFolder: '',
 	openAfterExport: true,
@@ -67,21 +68,15 @@ export class BasesToHtmlSettingTab extends PluginSettingTab {
 					}),
 			);
 
-		new Setting(containerEl)
-			.setName('Default export scope')
-			.setDesc(
-				'Include notes renders full Markdown note content into modals. Bases only exports cards metadata.',
-			)
-			.addDropdown((drop) =>
-				drop
-					.addOption('all', 'Include notes (full content in modals)')
-					.addOption('bases-only', 'Bases only (metadata cards only)')
-					.setValue(this.plugin.settings.defaultScope)
-					.onChange(async (val) => {
-						this.plugin.settings.defaultScope = val as ExportScope;
-						await this.plugin.saveSettings();
-					}),
-			);
+		renderNoteContentRadioGroup(
+			containerEl,
+			this.plugin.settings.defaultScope,
+			(val) => {
+				this.plugin.settings.defaultScope = val;
+				void this.plugin.saveSettings();
+			},
+			'settingsDefaultNoteContent',
+		);
 
 		new Setting(containerEl)
 			.setName('Default font')

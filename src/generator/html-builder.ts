@@ -140,6 +140,7 @@ export class HtmlBuilder {
         views: baseConfig.views,
         propertyTypes: baseConfig.propertyTypes || {},
       },
+      exportScope: this.options.exportScope || 'full',
       items,
     };
 

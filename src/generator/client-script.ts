@@ -16,6 +16,7 @@ export function getClientScript(): string {
 
   var base = baseData.base;
   var items = baseData.items;
+  var exportScope = baseData.exportScope || 'full';
   if (!base || !items) return;
 
   var storagePrefix = 'b2h_' + (base.title || 'default') + '_';
@@ -1464,19 +1465,30 @@ export function getClientScript(): string {
         var meta = getPropertyMetadata(col);
 
         if (col === 'file.name' || col === 'name' || col === 'file') {
-          var titleLink = document.createElement('a');
-          titleLink.className = 'table-cell-title';
-          titleLink.href = 'javascript:void(0);';
-          titleLink.appendChild(createIconSvg('file-text', 'b2h-icon-xs'));
-          var titleText = document.createElement('span');
-          titleText.textContent = item.title;
-          titleText.setAttribute('dir', 'auto');
-          titleLink.appendChild(titleText);
-          titleLink.addEventListener('click', function(ev) {
-            ev.preventDefault();
-            openNoteModal(item);
-          });
-          td.appendChild(titleLink);
+          if (exportScope !== 'bases-only') {
+            var titleLink = document.createElement('a');
+            titleLink.className = 'table-cell-title';
+            titleLink.href = 'javascript:void(0);';
+            titleLink.appendChild(createIconSvg('file-text', 'b2h-icon-xs'));
+            var titleText = document.createElement('span');
+            titleText.textContent = item.title;
+            titleText.setAttribute('dir', 'auto');
+            titleLink.appendChild(titleText);
+            titleLink.addEventListener('click', function(ev) {
+              ev.preventDefault();
+              openNoteModal(item);
+            });
+            td.appendChild(titleLink);
+          } else {
+            var titleSpan = document.createElement('span');
+            titleSpan.className = 'table-cell-title table-cell-title-static';
+            titleSpan.appendChild(createIconSvg('file-text', 'b2h-icon-xs'));
+            var titleTextStatic = document.createElement('span');
+            titleTextStatic.textContent = item.title;
+            titleTextStatic.setAttribute('dir', 'auto');
+            titleSpan.appendChild(titleTextStatic);
+            td.appendChild(titleSpan);
+          }
         } else if (meta.type === 'checkbox' || typeof val === 'boolean') {
           var boolSpan = document.createElement('span');
           boolSpan.className = val ? 'table-bool-checked' : 'table-bool-unchecked';
@@ -1871,9 +1883,13 @@ export function getClientScript(): string {
 
     card.appendChild(body);
 
-    card.addEventListener('click', function() {
-      openNoteModal(item);
-    });
+    if (exportScope !== 'bases-only') {
+      card.addEventListener('click', function() {
+        openNoteModal(item);
+      });
+    } else {
+      card.classList.add('bases-card-static');
+    }
 
     return card;
   }
@@ -1886,6 +1902,7 @@ export function getClientScript(): string {
   }
 
   function openNoteModal(item) {
+    if (exportScope === 'bases-only') return;
     if (!noteModal) return;
     if (modalTitle) {
       modalTitle.textContent = item.title;
@@ -1908,12 +1925,18 @@ export function getClientScript(): string {
     }
 
     if (modalMarkdownContent) {
-      if (item.htmlContent) {
-        modalMarkdownContent.innerHTML = item.htmlContent;
-      } else if (item.properties && item.properties.source) {
-        modalMarkdownContent.innerHTML = '<p><a href="' + escapeHtml(String(item.properties.source)) + '" target="_blank" rel="noopener">Open source link &rarr;</a></p>';
+      if (exportScope === 'properties-only') {
+        modalMarkdownContent.innerHTML = '';
+        modalMarkdownContent.style.display = 'none';
       } else {
-        modalMarkdownContent.innerHTML = '<p style="color:var(--text-muted);">No note content exported for this item.</p>';
+        modalMarkdownContent.style.display = '';
+        if (item.htmlContent) {
+          modalMarkdownContent.innerHTML = item.htmlContent;
+        } else if (item.properties && item.properties.source) {
+          modalMarkdownContent.innerHTML = '<p><a href="' + escapeHtml(String(item.properties.source)) + '" target="_blank" rel="noopener">Open source link &rarr;</a></p>';
+        } else {
+          modalMarkdownContent.innerHTML = '<p style="color:var(--text-muted);">No note content exported for this item.</p>';
+        }
       }
     }
 

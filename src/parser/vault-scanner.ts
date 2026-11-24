@@ -136,7 +136,7 @@ export class VaultScanner {
 			// Render HTML if Include Notes is enabled
 			let htmlContent: string | undefined;
 			let rawMarkdown: string | undefined;
-			if (scope === 'all') {
+			if (scope === 'full' || (scope as string) === 'all') {
 				try {
 					rawMarkdown = await this.app.vault.read(file);
 					const bodyMarkdown = stripFrontmatter(rawMarkdown);
