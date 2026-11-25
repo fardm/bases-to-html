@@ -250,7 +250,7 @@ export class HtmlBuilder {
             <span>Properties</span>
           </button>
           <div id="propertiesPopover" class="bases-popover popover-align-left">
-            <div class="popover-header">Card properties</div>
+            <div class="popover-header">Properties</div>
             <div id="propertiesList" class="popover-rules-list"></div>
           </div>
         </div>

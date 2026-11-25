@@ -27,6 +27,13 @@ class VaultCssPickerModal extends FuzzySuggestModal<TFile> {
 	}
 }
 
+interface SelectedCssFile {
+	id: string;
+	name: string;
+	content: string;
+	source: 'vault' | 'disk';
+}
+
 export class ExportModal extends Modal {
 	private plugin: BasesToHtmlPlugin;
 	private baseFiles: TFile[] = [];
@@ -36,7 +43,8 @@ export class ExportModal extends Modal {
 	private exportScope: ExportScope;
 	private exportedData: ExportedDataScope;
 	private font: string;
-	private customCss: string;
+	private selectedCssFiles: SelectedCssFile[] = [];
+	private customCssText: string;
 	private cssSource: string;
 	private openExportedFiles: boolean;
 	private documentClickHandler?: (e: MouseEvent) => void;
@@ -50,7 +58,8 @@ export class ExportModal extends Modal {
 		this.exportScope = 'full';
 		this.exportedData = 'all';
 		this.font = 'vazirmatn';
-		this.customCss = '';
+		this.selectedCssFiles = [];
+		this.customCssText = '';
 		this.cssSource = 'None';
 		this.openExportedFiles = true;
 	}
@@ -288,6 +297,17 @@ export class ExportModal extends Modal {
 		});
 
 		const updateSourceBadge = () => {
+			const count = this.selectedCssFiles.length;
+			const hasText = Boolean(this.customCssText.trim());
+			if (count > 0 && hasText) {
+				this.cssSource = `${count} file${count > 1 ? 's' : ''} + Direct input`;
+			} else if (count > 0) {
+				this.cssSource = `${count} file${count > 1 ? 's' : ''}`;
+			} else if (hasText) {
+				this.cssSource = 'Direct input';
+			} else {
+				this.cssSource = 'None';
+			}
 			cssSourceIndicator.setText(`Source: ${this.cssSource}`);
 		};
 		updateSourceBadge();
@@ -302,24 +322,38 @@ export class ExportModal extends Modal {
 			cls: 'b2h-hidden-input',
 		});
 		diskFileInput.accept = '.css';
+		diskFileInput.multiple = true;
 		diskFileInput.addEventListener('change', () => {
-			const file = diskFileInput.files?.[0];
-			if (!file) return;
+			const files = diskFileInput.files;
+			if (!files || files.length === 0) return;
 
-			const reader = new FileReader();
-			reader.onload = () => {
-				const content = typeof reader.result === 'string' ? reader.result : '';
-				this.customCss = content;
-				this.cssSource = `Disk: ${file.name}`;
-				cssTextarea.value = this.customCss;
-				updateSourceBadge();
-				new Notice(`Loaded ${file.name}`);
-			};
-			reader.onerror = () => {
-				new Notice('Failed to read CSS file from disk.');
-			};
-			reader.readAsText(file);
-			// Reset input value so the same file can be re-selected if needed
+			let loadedCount = 0;
+			const totalFiles = files.length;
+			for (let i = 0; i < totalFiles; i++) {
+				const file = files[i];
+				if (!file) continue;
+
+				const reader = new FileReader();
+				reader.onload = () => {
+					const content = typeof reader.result === 'string' ? reader.result : '';
+					this.selectedCssFiles.push({
+						id: `disk:${file.name}-${Date.now()}-${Math.random()}`,
+						name: file.name,
+						content,
+						source: 'disk',
+					});
+					loadedCount++;
+					if (loadedCount === totalFiles) {
+						renderCssFilesList();
+						updateSourceBadge();
+						new Notice(totalFiles === 1 ? `Loaded ${file.name}` : `Loaded ${totalFiles} CSS files from disk`);
+					}
+				};
+				reader.onerror = () => {
+					new Notice(`Failed to read ${file.name} from disk.`);
+				};
+				reader.readAsText(file);
+			}
 			diskFileInput.value = '';
 		});
 
@@ -339,9 +373,19 @@ export class ExportModal extends Modal {
 				void (async () => {
 					try {
 						const content = await this.app.vault.read(file);
-						this.customCss = content;
-						this.cssSource = `Vault: ${file.path}`;
-						cssTextarea.value = this.customCss;
+						const fileId = `vault:${file.path}`;
+						const exists = this.selectedCssFiles.some((f) => f.id === fileId);
+						if (exists) {
+							new Notice(`${file.name} is already selected.`);
+							return;
+						}
+						this.selectedCssFiles.push({
+							id: fileId,
+							name: file.name,
+							content,
+							source: 'vault',
+						});
+						renderCssFilesList();
 						updateSourceBadge();
 						new Notice(`Loaded ${file.name}`);
 					} catch {
@@ -362,20 +406,52 @@ export class ExportModal extends Modal {
 			text: 'Clear',
 		});
 		clearBtn.addEventListener('click', () => {
-			this.customCss = '';
-			this.cssSource = 'None';
+			this.selectedCssFiles = [];
+			this.customCssText = '';
 			cssTextarea.value = '';
+			renderCssFilesList();
 			updateSourceBadge();
 		});
+
+		const cssFilesListContainer = customCssSection.createDiv({
+			cls: 'b2h-selected-css-list',
+		});
+
+		const renderCssFilesList = () => {
+			cssFilesListContainer.empty();
+			this.selectedCssFiles.forEach((cssFile, index) => {
+				const row = cssFilesListContainer.createDiv({
+					cls: 'b2h-selected-css-row',
+				});
+
+				const info = row.createDiv({ cls: 'b2h-selected-css-info' });
+				const iconSpan = info.createSpan({ cls: 'b2h-css-row-icon' });
+				setIcon(iconSpan, 'file-code');
+				info.createSpan({ text: cssFile.name, cls: 'b2h-css-row-name' });
+
+				const deleteBtn = row.createEl('button', {
+					cls: 'clickable-icon b2h-btn-remove',
+					attr: { 'aria-label': `Remove ${cssFile.name}`, type: 'button' },
+				});
+				setIcon(deleteBtn, 'trash-2');
+
+				deleteBtn.addEventListener('click', (e) => {
+					e.stopPropagation();
+					this.selectedCssFiles.splice(index, 1);
+					renderCssFilesList();
+					updateSourceBadge();
+				});
+			});
+		};
+		renderCssFilesList();
 
 		const cssTextarea = customCssSection.createEl('textarea', {
 			cls: 'b2h-custom-css-textarea',
 		});
 		cssTextarea.placeholder = '/* enter or paste custom CSS rules */';
-		cssTextarea.value = this.customCss;
+		cssTextarea.value = this.customCssText;
 		cssTextarea.addEventListener('input', () => {
-			this.customCss = cssTextarea.value;
-			this.cssSource = this.customCss.trim() ? 'Direct input' : 'None';
+			this.customCssText = cssTextarea.value;
 			updateSourceBadge();
 		});
 
@@ -415,6 +491,13 @@ export class ExportModal extends Modal {
 		exportBtn.disabled = true;
 		exportBtn.setText('Exporting...');
 
+		const combinedCss = [
+			...this.selectedCssFiles.map((f) => f.content),
+			this.customCssText,
+		]
+			.filter((c) => c && c.trim())
+			.join('\n\n');
+
 		const options: ExportOptions = {
 			documentTitle: this.documentTitle || 'My archive',
 			baseFilePaths: Array.from(this.selectedFiles),
@@ -422,7 +505,7 @@ export class ExportModal extends Modal {
 			exportScope: this.exportScope,
 			exportedData: this.exportedData,
 			font: this.font,
-			customCss: this.customCss,
+			customCss: combinedCss,
 			outputLocation: this.plugin.settings.defaultOutputFolder || '',
 			openExportedFiles: this.openExportedFiles,
 		};

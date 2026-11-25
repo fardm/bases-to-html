@@ -190,6 +190,45 @@
   margin-bottom: 0.5rem;
 }
 
+.b2h-selected-css-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.b2h-selected-css-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, 6px);
+}
+
+.b2h-selected-css-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.b2h-css-row-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-accent);
+}
+
+.b2h-css-row-name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .b2h-hidden-input {
   display: none;
 }

@@ -423,12 +423,12 @@ export function getClientScript(): string {
     if (propertiesToggleBtn) {
       var propSpan = propertiesToggleBtn.querySelector('span');
       if (propSpan) {
-        propSpan.textContent = view.type === 'table' ? 'Columns' : 'Properties';
+        propSpan.textContent = 'Properties';
       }
     }
     var propPopoverHeader = document.querySelector('#propertiesPopover .popover-header');
     if (propPopoverHeader) {
-      propPopoverHeader.textContent = view.type === 'table' ? 'Table columns' : 'Card properties';
+      propPopoverHeader.textContent = 'Properties';
     }
 
     searchQuery = '';
