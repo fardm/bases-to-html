@@ -1,6 +1,7 @@
 export type ExportFormat = 'single' | 'multi';
 export type ExportScope = 'bases-only' | 'properties-only' | 'full';
 export type ExportedDataScope = 'all' | 'filtered';
+export type OutputStorageMode = 'vault' | 'local';
 export type PageWidth = 'full' | 'normal' | 'narrow';
 export type ThemeMode = 'light' | 'dark';
 export type PropertyType = 'text' | 'number' | 'date' | 'checkbox' | 'list' | 'link';
@@ -107,6 +108,7 @@ export interface ExportOptions {
 	font: string;
 	customCss: string;
 	outputLocation: string;
+	outputMode?: OutputStorageMode;
 	openExportedFiles: boolean;
 }
 

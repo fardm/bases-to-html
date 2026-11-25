@@ -1,7 +1,6 @@
 import { Plugin } from 'obsidian';
 import {
 	BasesToHtmlSettings,
-	BasesToHtmlSettingTab,
 	DEFAULT_SETTINGS,
 } from './settings';
 import { ExportModal } from './ui/export-modal';
@@ -25,19 +24,20 @@ export default class BasesToHtmlPlugin extends Plugin {
 				new ExportModal(this.app, this).open();
 			},
 		});
-
-		// Register Plugin settings tab
-		this.addSettingTab(new BasesToHtmlSettingTab(this.app, this));
 	}
 
 	onunload() {}
 
 	async loadSettings() {
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<BasesToHtmlSettings>,
-		);
+		const loaded = (await this.loadData()) as Partial<BasesToHtmlSettings> | null;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded);
+
+		// Migrate legacy defaultOutputFolder from Community Settings into vaultOutputFolder
+		if (!this.settings.vaultOutputFolder && this.settings.defaultOutputFolder) {
+			this.settings.vaultOutputFolder = this.settings.defaultOutputFolder;
+			delete this.settings.defaultOutputFolder;
+			await this.saveSettings();
+		}
 	}
 
 	async saveSettings() {

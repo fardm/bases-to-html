@@ -10,6 +10,18 @@ import { ScannedVaultData, VaultScanner } from '../parser/vault-scanner';
 import { ExportOptions, NoteItem } from '../types';
 import { HtmlBuilder, sanitizeSlug } from './html-builder';
 
+interface NodeFsModule {
+	promises: {
+		mkdir: (path: string, options: { recursive: boolean }) => Promise<void>;
+		writeFile: (path: string, data: string | Uint8Array, encoding?: string) => Promise<void>;
+	};
+}
+
+interface NodePathModule {
+	join: (...paths: string[]) => string;
+	dirname: (path: string) => string;
+}
+
 export class Exporter {
 	private app: App;
 	private component: Component;
@@ -25,6 +37,18 @@ export class Exporter {
 			return null;
 		}
 
+		const isLocalMode = options.outputMode === 'local';
+		if (isLocalMode && !options.outputLocation?.trim()) {
+			new Notice('Please select a local output folder.');
+			return null;
+		}
+
+		const nodeMods = isLocalMode ? this.getNodeFileModules() : null;
+		if (isLocalMode && !nodeMods) {
+			new Notice('Local storage export outside the vault is only supported on Obsidian Desktop.');
+			return null;
+		}
+
 		new Notice('Exporting bases to HTML...');
 
 		const scanner = new VaultScanner(this.app, this.component);
@@ -32,15 +56,22 @@ export class Exporter {
 
 		// Determine target directory path
 		const safeDocTitle = sanitizeFolderName(options.documentTitle || 'Bases Export');
-		const baseDir = options.outputLocation
-			? normalizePath(options.outputLocation)
-			: '';
-		const targetDir = normalizePath(
-			baseDir ? `${baseDir}/${safeDocTitle}` : safeDocTitle,
-		);
+		const targetDir = isLocalMode && nodeMods
+			? nodeMods.path.join(options.outputLocation.trim(), safeDocTitle)
+			: normalizePath(
+					options.outputLocation
+						? `${normalizePath(options.outputLocation)}/${safeDocTitle}`
+						: safeDocTitle,
+				);
+
+		const joinOutputPath = (dir: string, rel: string): string =>
+			isLocalMode && nodeMods ? nodeMods.path.join(dir, rel) : normalizePath(`${dir}/${rel}`);
+
+		const getOutputParent = (fullPath: string): string =>
+			isLocalMode && nodeMods ? nodeMods.path.dirname(fullPath) : getParentDir(fullPath);
 
 		// Ensure target directory exists
-		await this.ensureDirectory(targetDir);
+		await this.ensureDirectory(targetDir, nodeMods);
 
 		const scannedBases: ScannedVaultData[] = [];
 
@@ -72,8 +103,8 @@ export class Exporter {
 				if (!singleBase) return null;
 				const { baseConfig, items } = singleBase;
 				const htmlContent = htmlBuilder.buildSinglePage(baseConfig, items);
-				const outputPath = normalizePath(`${targetDir}/index.html`);
-				await this.writeFileSafe(outputPath, htmlContent);
+				const outputPath = joinOutputPath(targetDir, 'index.html');
+				await this.writeFileSafe(outputPath, htmlContent, nodeMods);
 				mainEntryPath = outputPath;
 			} else {
 				// Multiple bases in single page format: generate an index and individual standalone single pages
@@ -82,15 +113,15 @@ export class Exporter {
 					const { baseConfig, items } = scanned;
 					const htmlContent = htmlBuilder.buildSinglePage(baseConfig, items);
 					const slug = sanitizeSlug(baseConfig.fileName);
-					const outputPath = normalizePath(`${targetDir}/${slug}.html`);
-					await this.writeFileSafe(outputPath, htmlContent);
+					const outputPath = joinOutputPath(targetDir, `${slug}.html`);
+					await this.writeFileSafe(outputPath, htmlContent, nodeMods);
 					multiFileData.push({ config: baseConfig, items });
 				}
 
 				// Build directory index linking to the single page files (with self-contained inlined styles)
 				const indexHtml = htmlBuilder.buildDirectoryIndex(multiFileData, true);
-				const indexPath = normalizePath(`${targetDir}/index.html`);
-				await this.writeFileSafe(indexPath, indexHtml);
+				const indexPath = joinOutputPath(targetDir, 'index.html');
+				await this.writeFileSafe(indexPath, indexHtml, nodeMods);
 				mainEntryPath = indexPath;
 			}
 		} else {
@@ -103,10 +134,10 @@ export class Exporter {
 			const generatedFiles = htmlBuilder.buildMultiFile(multiFileData);
 
 			for (const genFile of generatedFiles) {
-				const fullPath = normalizePath(`${targetDir}/${genFile.relativePath}`);
-				const dir = getParentDir(fullPath);
-				if (dir) await this.ensureDirectory(dir);
-				await this.writeFileSafe(fullPath, genFile.content);
+				const fullPath = joinOutputPath(targetDir, genFile.relativePath);
+				const dir = getOutputParent(fullPath);
+				if (dir) await this.ensureDirectory(dir, nodeMods);
+				await this.writeFileSafe(fullPath, genFile.content, nodeMods);
 				if (genFile.relativePath === 'index.html') {
 					mainEntryPath = fullPath;
 				}
@@ -115,13 +146,13 @@ export class Exporter {
 			// Copy referenced image assets
 			for (const scanned of scannedBases) {
 				for (const [relPath, imgTFile] of scanned.imageFilesToCopy.entries()) {
-					const targetImagePath = normalizePath(`${targetDir}/${relPath}`);
-					const imgDir = getParentDir(targetImagePath);
-					if (imgDir) await this.ensureDirectory(imgDir);
+					const targetImagePath = joinOutputPath(targetDir, relPath);
+					const imgDir = getOutputParent(targetImagePath);
+					if (imgDir) await this.ensureDirectory(imgDir, nodeMods);
 
 					try {
 						const buffer = await this.app.vault.readBinary(imgTFile);
-						await this.writeBinarySafe(targetImagePath, buffer);
+						await this.writeBinarySafe(targetImagePath, buffer, nodeMods);
 					} catch (err) {
 						console.error(`Failed to copy image ${imgTFile.path}:`, err);
 					}
@@ -132,13 +163,40 @@ export class Exporter {
 		new Notice(`Bases exported successfully to:\n${targetDir}`);
 
 		if (options.openExportedFiles && mainEntryPath) {
-			await this.openFile(mainEntryPath);
+			await this.openFile(mainEntryPath, isLocalMode);
 		}
 
 		return mainEntryPath;
 	}
 
-	private async ensureDirectory(path: string): Promise<void> {
+	private getNodeFileModules(): { fs: NodeFsModule; path: NodePathModule } | null {
+		try {
+			const req = (window as unknown as { require?: (mod: string) => unknown }).require;
+			if (!req) return null;
+			const fs = req('fs') as NodeFsModule;
+			const path = req('path') as NodePathModule;
+			if (
+				typeof fs?.promises?.mkdir === 'function' &&
+				typeof fs?.promises?.writeFile === 'function' &&
+				typeof path?.join === 'function' &&
+				typeof path?.dirname === 'function'
+			) {
+				return { fs, path };
+			}
+		} catch {
+			// Unavailable on mobile / non-Node environments
+		}
+		return null;
+	}
+
+	private async ensureDirectory(
+		path: string,
+		nodeMods: { fs: NodeFsModule; path: NodePathModule } | null,
+	): Promise<void> {
+		if (nodeMods) {
+			await nodeMods.fs.promises.mkdir(path, { recursive: true });
+			return;
+		}
 		const normalized = normalizePath(path);
 		if (!normalized || normalized === '/' || normalized === '.') return;
 		const parts = normalized.split('/');
@@ -152,33 +210,57 @@ export class Exporter {
 		}
 	}
 
-	private async writeFileSafe(path: string, content: string): Promise<void> {
+	private async writeFileSafe(
+		path: string,
+		content: string,
+		nodeMods: { fs: NodeFsModule; path: NodePathModule } | null,
+	): Promise<void> {
+		if (nodeMods) {
+			await nodeMods.fs.promises.writeFile(path, content, 'utf8');
+			return;
+		}
 		const normalized = normalizePath(path);
 		await this.app.vault.adapter.write(normalized, content);
 	}
 
-	private async writeBinarySafe(path: string, buffer: ArrayBuffer): Promise<void> {
+	private async writeBinarySafe(
+		path: string,
+		buffer: ArrayBuffer,
+		nodeMods: { fs: NodeFsModule; path: NodePathModule } | null,
+	): Promise<void> {
+		if (nodeMods) {
+			await nodeMods.fs.promises.writeFile(path, new Uint8Array(buffer));
+			return;
+		}
 		const normalized = normalizePath(path);
 		await this.app.vault.adapter.writeBinary(normalized, buffer);
 	}
 
-	private async openFile(filePath: string): Promise<void> {
+	private async openFile(filePath: string, isLocalMode: boolean): Promise<void> {
 		try {
 			// On desktop, try launching with system default application (browser)
 			const electron = (window as unknown as { require?: (mod: string) => { shell?: { openPath: (p: string) => Promise<string> } } }).require?.('electron');
-			if (electron?.shell && 'getBasePath' in this.app.vault.adapter) {
-				const adapterWithBase = this.app.vault.adapter as { getBasePath: () => string };
-				const fullDiskPath = normalizePath(`${adapterWithBase.getBasePath()}/${filePath}`);
-				await electron.shell.openPath(fullDiskPath);
-				return;
+			if (electron?.shell) {
+				if (isLocalMode) {
+					await electron.shell.openPath(filePath);
+					return;
+				}
+				if ('getBasePath' in this.app.vault.adapter) {
+					const adapterWithBase = this.app.vault.adapter as { getBasePath: () => string };
+					const fullDiskPath = normalizePath(`${adapterWithBase.getBasePath()}/${filePath}`);
+					await electron.shell.openPath(fullDiskPath);
+					return;
+				}
 			}
 		} catch {
 			// Fallback to internal Obsidian leaf
 		}
 
-		const abstractFile = this.app.vault.getAbstractFileByPath(filePath);
-		if (abstractFile instanceof TFile) {
-			await this.app.workspace.getLeaf(true).openFile(abstractFile);
+		if (!isLocalMode) {
+			const abstractFile = this.app.vault.getAbstractFileByPath(filePath);
+			if (abstractFile instanceof TFile) {
+				await this.app.workspace.getLeaf(true).openFile(abstractFile);
+			}
 		}
 	}
 }

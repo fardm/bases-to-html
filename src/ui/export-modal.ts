@@ -1,7 +1,7 @@
-import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile, setIcon } from 'obsidian';
+import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile, TFolder, setIcon } from 'obsidian';
 import { Exporter } from '../generator/exporter';
 import type BasesToHtmlPlugin from '../main';
-import { ExportFormat, ExportOptions, ExportScope, ExportedDataScope } from '../types';
+import { ExportFormat, ExportOptions, ExportScope, ExportedDataScope, OutputStorageMode } from '../types';
 import { renderExportedDataRadioGroup } from './exported-data-radio';
 import { renderNoteContentRadioGroup } from './note-content-radio';
 
@@ -46,6 +46,9 @@ export class ExportModal extends Modal {
 	private selectedCssFiles: SelectedCssFile[] = [];
 	private customCssText: string;
 	private cssSource: string;
+	private outputMode: OutputStorageMode;
+	private vaultOutputFolder: string;
+	private localOutputFolder: string;
 	private openExportedFiles: boolean;
 	private documentClickHandler?: (e: MouseEvent) => void;
 
@@ -61,6 +64,9 @@ export class ExportModal extends Modal {
 		this.selectedCssFiles = [];
 		this.customCssText = '';
 		this.cssSource = 'None';
+		this.outputMode = plugin.settings.outputMode || 'vault';
+		this.vaultOutputFolder = plugin.settings.vaultOutputFolder || '';
+		this.localOutputFolder = plugin.settings.localOutputFolder || '';
 		this.openExportedFiles = true;
 	}
 
@@ -455,7 +461,156 @@ export class ExportModal extends Modal {
 			updateSourceBadge();
 		});
 
-		// 3.7 Open exported files
+		// 3.7 Output location (Vault vs Local storage)
+		const outputSection = contentEl.createDiv({
+			cls: 'b2h-output-location-section',
+		});
+
+		const outputHeader = outputSection.createDiv({ cls: 'b2h-output-header' });
+		outputHeader.createDiv({ text: 'Output location', cls: 'setting-item-name' });
+		outputHeader.createDiv({
+			text: 'Choose where to save the exported HTML files.',
+			cls: 'setting-item-description',
+		});
+
+		const modeToggleRow = outputSection.createDiv({ cls: 'b2h-output-mode-toggle' });
+		const vaultModeBtn = modeToggleRow.createEl('button', {
+			text: 'Vault',
+			cls: 'b2h-mode-btn',
+			attr: { type: 'button' },
+		});
+		const localModeBtn = modeToggleRow.createEl('button', {
+			text: 'Local storage',
+			cls: 'b2h-mode-btn',
+			attr: { type: 'button' },
+		});
+
+		const vaultPanel = outputSection.createDiv({ cls: 'b2h-output-panel' });
+		const localPanel = outputSection.createDiv({ cls: 'b2h-output-panel' });
+
+		// Vault searchable folder picker
+		const vaultFolderWrapper = vaultPanel.createDiv({ cls: 'b2h-base-input-wrapper' });
+		const vaultFolderInput = vaultFolderWrapper.createEl('input', {
+			type: 'text',
+			placeholder: 'Search or select vault folder (leave blank for root)...',
+			cls: 'b2h-base-search-input',
+		});
+		vaultFolderInput.value = this.vaultOutputFolder;
+
+		const vaultFolderDropdown = vaultFolderWrapper.createDiv({ cls: 'b2h-base-dropdown' });
+		vaultFolderDropdown.hide();
+
+		const allVaultFolders = this.app.vault
+			.getAllLoadedFiles()
+			.filter((f): f is TFolder => f instanceof TFolder && !f.isRoot())
+			.map((f) => f.path)
+			.sort((a, b) => a.localeCompare(b));
+
+		const renderVaultFolderDropdown = () => {
+			vaultFolderDropdown.empty();
+			const q = vaultFolderInput.value.trim().toLowerCase();
+
+			if (!q || 'vault root'.includes(q) || q === '/') {
+				const rootItem = vaultFolderDropdown.createDiv({ cls: 'b2h-base-dropdown-item' });
+				const rootIcon = rootItem.createSpan({ cls: 'b2h-dropdown-item-icon' });
+				setIcon(rootIcon, 'folder');
+				rootItem.createSpan({ text: '/ (Vault root)', cls: 'b2h-dropdown-item-text' });
+				rootItem.addEventListener('mousedown', (e) => {
+					e.preventDefault();
+					this.vaultOutputFolder = '';
+					vaultFolderInput.value = '';
+					vaultFolderDropdown.hide();
+				});
+			}
+
+			const matches = allVaultFolders.filter((p) => p.toLowerCase().includes(q));
+			if (matches.length === 0 && q && !'vault root'.includes(q)) {
+				vaultFolderDropdown.createDiv({
+					text: `Use custom path "${vaultFolderInput.value.trim()}" (will be created if missing)`,
+					cls: 'b2h-base-dropdown-empty',
+				});
+				return;
+			}
+
+			matches.forEach((folderPath) => {
+				const item = vaultFolderDropdown.createDiv({ cls: 'b2h-base-dropdown-item' });
+				const iconSpan = item.createSpan({ cls: 'b2h-dropdown-item-icon' });
+				setIcon(iconSpan, 'folder');
+				item.createSpan({ text: folderPath, cls: 'b2h-dropdown-item-text' });
+				item.addEventListener('mousedown', (e) => {
+					e.preventDefault();
+					this.vaultOutputFolder = folderPath;
+					vaultFolderInput.value = folderPath;
+					vaultFolderDropdown.hide();
+				});
+			});
+		};
+
+		vaultFolderInput.addEventListener('focus', () => {
+			renderVaultFolderDropdown();
+			vaultFolderDropdown.show();
+		});
+		vaultFolderInput.addEventListener('click', () => {
+			renderVaultFolderDropdown();
+			vaultFolderDropdown.show();
+		});
+		vaultFolderInput.addEventListener('input', () => {
+			this.vaultOutputFolder = vaultFolderInput.value.trim();
+			renderVaultFolderDropdown();
+			vaultFolderDropdown.show();
+		});
+
+		const prevClickHandler = this.documentClickHandler;
+		this.documentClickHandler = (e: MouseEvent) => {
+			prevClickHandler?.(e);
+			if (!vaultFolderWrapper.contains(e.target as Node)) {
+				vaultFolderDropdown.hide();
+			}
+		};
+		if (prevClickHandler) {
+			activeDocument.removeEventListener('click', prevClickHandler);
+		}
+		activeDocument.addEventListener('click', this.documentClickHandler);
+
+		// Local storage folder picker (OS directory dialog)
+		const localInputRow = localPanel.createDiv({ cls: 'b2h-local-path-row' });
+		const localPathInput = localInputRow.createEl('input', {
+			type: 'text',
+			placeholder: 'Select a folder on your device...',
+			cls: 'b2h-base-search-input',
+		});
+		localPathInput.value = this.localOutputFolder;
+		localPathInput.addEventListener('input', () => {
+			this.localOutputFolder = localPathInput.value.trim();
+		});
+
+		const browseLocalBtn = localInputRow.createEl('button', {
+			text: 'Browse',
+			attr: { type: 'button' },
+		});
+		browseLocalBtn.addEventListener('click', () => {
+			void this.pickLocalDirectory(localPathInput);
+		});
+
+		const updateOutputModeUI = () => {
+			const isVault = this.outputMode === 'vault';
+			vaultModeBtn.toggleClass('is-active', isVault);
+			localModeBtn.toggleClass('is-active', !isVault);
+			vaultPanel.toggle(isVault);
+			localPanel.toggle(!isVault);
+		};
+
+		vaultModeBtn.addEventListener('click', () => {
+			this.outputMode = 'vault';
+			updateOutputModeUI();
+		});
+		localModeBtn.addEventListener('click', () => {
+			this.outputMode = 'local';
+			updateOutputModeUI();
+		});
+		updateOutputModeUI();
+
+		// 3.8 Open exported files
 		new Setting(contentEl)
 			.setName('Open exported files')
 			.setDesc('Automatically open the exported HTML upon completion.')
@@ -482,14 +637,71 @@ export class ExportModal extends Modal {
 		});
 	}
 
+	private async pickLocalDirectory(localPathInput: HTMLInputElement): Promise<void> {
+		try {
+			const electron = (
+				window as unknown as {
+					require?: (mod: string) => {
+						remote?: {
+							dialog?: {
+								showOpenDialog: (opts: {
+									title?: string;
+									defaultPath?: string;
+									properties: string[];
+								}) => Promise<{ canceled: boolean; filePaths: string[] }>;
+							};
+						};
+						dialog?: {
+							showOpenDialog: (opts: {
+								title?: string;
+								defaultPath?: string;
+								properties: string[];
+							}) => Promise<{ canceled: boolean; filePaths: string[] }>;
+						};
+					};
+				}
+			).require?.('electron');
+
+			const dialog = electron?.remote?.dialog ?? electron?.dialog;
+			if (dialog?.showOpenDialog) {
+				const result = await dialog.showOpenDialog({
+					title: 'Select output folder',
+					defaultPath: this.localOutputFolder || undefined,
+					properties: ['openDirectory', 'createDirectory'],
+				});
+				if (!result.canceled && result.filePaths[0]) {
+					this.localOutputFolder = result.filePaths[0];
+					localPathInput.value = result.filePaths[0];
+				}
+				return;
+			}
+		} catch (err) {
+			console.error('Failed to open local folder dialog:', err);
+		}
+
+		new Notice(
+			'Native folder picker is only available on Obsidian Desktop. Please enter a path manually or switch to Vault storage.',
+		);
+	}
+
 	private async triggerExport(exportBtn: HTMLButtonElement): Promise<void> {
 		if (this.selectedFiles.size === 0) {
 			new Notice('Please select at least one base file.');
 			return;
 		}
 
+		if (this.outputMode === 'local' && !this.localOutputFolder.trim()) {
+			new Notice('Please select or enter a local output folder.');
+			return;
+		}
+
 		exportBtn.disabled = true;
 		exportBtn.setText('Exporting...');
+
+		this.plugin.settings.outputMode = this.outputMode;
+		this.plugin.settings.vaultOutputFolder = this.vaultOutputFolder;
+		this.plugin.settings.localOutputFolder = this.localOutputFolder;
+		await this.plugin.saveSettings();
 
 		const combinedCss = [
 			...this.selectedCssFiles.map((f) => f.content),
@@ -506,7 +718,11 @@ export class ExportModal extends Modal {
 			exportedData: this.exportedData,
 			font: this.font,
 			customCss: combinedCss,
-			outputLocation: this.plugin.settings.defaultOutputFolder || '',
+			outputLocation:
+				this.outputMode === 'local'
+					? this.localOutputFolder.trim()
+					: this.vaultOutputFolder.trim(),
+			outputMode: this.outputMode,
 			openExportedFiles: this.openExportedFiles,
 		};
 

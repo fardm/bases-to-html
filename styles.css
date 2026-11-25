@@ -160,6 +160,59 @@
   padding-top: 1rem;
 }
 
+.b2h-output-location-section {
+  margin: 1.25rem 0;
+  border-top: 1px solid var(--background-modifier-border);
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.b2h-output-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.b2h-output-mode-toggle {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.b2h-mode-btn {
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-s, 4px);
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.b2h-mode-btn.is-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.b2h-output-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.b2h-local-path-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.b2h-local-path-row .b2h-base-search-input {
+  flex: 1;
+}
+
 .b2h-css-header {
   display: flex;
   align-items: flex-start;
