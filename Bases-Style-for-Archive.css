@@ -1,0 +1,165 @@
+/* ------ overview   ------- */
+main[data-view-name="👁️ oveview"] {
+    .bases-tbody,
+    .bases-thead,
+    .summary-type-label,
+    .bases-group-header,
+    .bases-status-bar,
+    .bases-grand-summary-wrapper
+    {
+        display: none;
+    }
+
+    [data-group-value="book"] [data-column="length"] {
+        display: none;
+    }
+
+    :is(
+        [data-group-value="animation"],
+        [data-group-value="documentary"],
+        [data-group-value="movie"],
+        [data-group-value="series"],
+        [data-group-value="short_film"],
+        [data-group-value="theater"],
+        [data-group-value="podcast"],
+        [data-group-value="media"]
+    ) [data-column="pages"] {
+        display: none;
+    }
+
+    .bases-table,
+    .bases-tfoot,
+    .bases-summary-row {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        text-align: center;
+    }
+    
+    .bases-table {
+        padding: 8px 0;
+    }
+
+    .bases-summary-row {
+        gap: 8px; 
+        border-top: none;
+
+    }
+
+    .bases-summary-cell {
+        border: none;
+        padding: 4px
+    }
+
+    .bases-view-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+    }
+
+    .bases-table-group-section,
+    .bases-table-wrapper {
+        margin: 0;
+    }
+
+    [data-group-value="animation"] [data-column="file.name"] .summary-result-value::after { content: " animation"; }
+    [data-group-value="book"] [data-column="file.name"] .summary-result-value::after      { content: " book"; }
+    [data-group-value="documentary"] [data-column="file.name"] .summary-result-value::after { content: " documentary"; }
+    [data-group-value="short_film"] [data-column="file.name"] .summary-result-value::after { content: " short film"; }
+    [data-group-value="movie"] [data-column="file.name"] .summary-result-value::after     { content: " movie"; }
+    [data-group-value="series"] [data-column="file.name"] .summary-result-value::after    { content: " series"; }
+    [data-group-value="theater"] [data-column="file.name"] .summary-result-value::after   { content: " theater"; }
+    [data-group-value="podcast"] [data-column="file.name"] .summary-result-value::after    { content: " podcast"; }
+    [data-group-value="media"] [data-column="file.name"] .summary-result-value::after     { content: " media"; }
+
+    td.bases-summary-cell[data-column="tags"] .summary-result-value {
+      font-size: 2rem;
+    }
+    .summary-result-value {
+      font-size: 1rem;
+    }
+}
+
+
+
+/* ------  hard cover - select data-view-name="📚 Books"  ------- */
+
+[data-view-name="📚 Books"] {
+  --spine-dir: to left;
+
+  .bases-cards-grid {
+    gap: 2rem;
+  }
+
+  .bases-card {
+    overflow: visible;
+    gap: 0;
+    contain: inherit;
+    border: none;
+    background: transparent;
+
+    &:hover {
+      transform: none;
+      box-shadow: none;
+      border-color: transparent;
+      background-color: transparent !important;
+
+      .bases-card-image-wrapper {
+        transform: translateY(-4px) scale(1.03);
+        box-shadow:
+          inset 1px 1px 0 1px rgba(255,255,255,0.2),
+          inset 0 0 0 1px rgba(0,0,0,0.1),
+          -4px 4px 8px 0 rgba(0,0,0,0.3),
+          -12px 16px 30px 0 rgba(0,0,0,0.3);
+      }
+
+      .card-image {
+        transform: none;
+      }
+    }
+  }
+
+  .bases-card-body {
+    padding: 10px 0;
+  }
+
+  /* Book shadow & spine */
+  .bases-card-image-wrapper {
+    position: relative;
+    overflow: hidden;
+    border-radius: 6px 2px 2px 6px;
+    transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+    box-shadow:
+      inset 1px 1px 0 1px rgba(255,255,255,0.2),
+      inset 0 0 0 1px rgba(0,0,0,0.1),
+      -4px 2px 4px 0 rgba(0,0,0,0.3),
+      -8px 8px 20px 0 rgba(0,0,0,0.2);
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      background-image: linear-gradient(
+        var(--spine-dir),
+        rgba(0,0,0,0.2),
+        rgba(255,255,255,0.3) 1%,
+        transparent 6%,
+        rgba(0,0,0,0.15) 8%,
+        rgba(255,255,255,0.2) 9%,
+        transparent 20%
+      );
+    }
+  }
+
+  /* English books override */
+  [data-group-value="en"] {
+    --spine-dir: to right;
+
+    .bases-card-image-wrapper {
+      border-radius: 2px 6px 6px 2px;
+    }
+  }
+}

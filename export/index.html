@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-width="normal" data-font="vazirmatn" style="--card-size: 180px; --aspect-ratio: 1.5; --css-aspect-ratio: 0.6666666666666666; --image-fit: cover;">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My archive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  
+</head>
+<body data-base-id="archive" data-base-name="archive">
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none;" aria-hidden="true">
+  <defs>
+    <!-- Folder -->
+    <symbol id="lucide-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+    </symbol>
+
+    <!-- Sort (arrow-up-down) -->
+    <symbol id="lucide-sort" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>
+    </symbol>
+
+    <!-- Group (rows-2) -->
+    <symbol id="lucide-group" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="18" height="7" x="3" y="3" rx="1"/><rect width="18" height="7" x="3" y="14" rx="1"/>
+    </symbol>
+
+    <!-- Filter -->
+    <symbol id="lucide-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+    </symbol>
+
+    <!-- Properties (sliders-horizontal) -->
+    <symbol id="lucide-properties" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/>
+      <line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/>
+      <line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/>
+      <line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>
+    </symbol>
+
+    <!-- Search -->
+    <symbol id="lucide-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+    </symbol>
+
+    <!-- Settings -->
+    <symbol id="lucide-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
+    </symbol>
+
+    <!-- Plus -->
+    <symbol id="lucide-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12h14"/><path d="M12 5v14"/>
+    </symbol>
+
+    <!-- Trash-2 -->
+    <symbol id="lucide-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>
+    </symbol>
+
+    <!-- Grip-vertical -->
+    <symbol id="lucide-grip-vertical" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/>
+    </symbol>
+
+    <!-- X -->
+    <symbol id="lucide-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+    </symbol>
+
+    <!-- Book-open -->
+    <symbol id="lucide-book-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+    </symbol>
+
+    <!-- Sun -->
+    <symbol id="lucide-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+    </symbol>
+
+    <!-- Moon -->
+    <symbol id="lucide-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+    </symbol>
+
+    <!-- Type (Text property) -->
+    <symbol id="lucide-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/>
+    </symbol>
+
+    <!-- Hash (Number property) -->
+    <symbol id="lucide-hash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>
+    </symbol>
+
+    <!-- Calendar (Date property) -->
+    <symbol id="lucide-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+    </symbol>
+
+    <!-- Check-square (Checkbox property) -->
+    <symbol id="lucide-check-square" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/>
+    </symbol>
+
+    <!-- Tag (List/Tags property) -->
+    <symbol id="lucide-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>
+    </symbol>
+
+    <!-- Link-2 (Link property) -->
+    <symbol id="lucide-link-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" x2="16" y1="12" y2="12"/>
+    </symbol>
+
+    <!-- File-text (File property) -->
+    <symbol id="lucide-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+    </symbol>
+
+    <!-- Calculator (Formula property) -->
+    <symbol id="lucide-calculator" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>
+    </symbol>
+
+    <!-- Image (Cover placeholder) -->
+    <symbol id="lucide-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+    </symbol>
+  </defs>
+</svg>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <div class="nav-brand-group">
+        <a href="index.html" class="nav-brand" title="Home">
+          <svg class="b2h-icon" aria-hidden="true"><use href="#lucide-folder"></use></svg>
+          <span>My archive</span>
+        </a>
+        <div class="view-selector-wrapper">
+          <select id="viewSelect" class="view-select">
+            <option value="0">📚 Books</option>
+<option value="1">🎬 Movies</option>
+<option value="2">👁️ oveview</option>
+<option value="3">Table</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="nav-controls">
+        <!-- Sort Button & Popover -->
+        <div class="toolbar-btn-group">
+          <button id="sortToggleBtn" class="toolbar-btn" title="Sort items">
+            <svg class="b2h-icon" aria-hidden="true"><use href="#lucide-sort"></use></svg>
+            <span>Sort</span>
+            <span id="sortCountBadge" class="toolbar-btn-badge" style="display:none;">0</span>
+          </button>
+          <div id="sortPopover" class="bases-popover popover-align-left">
+            <div class="popover-header">Sort by</div>
+            <div id="sortRulesList" class="popover-rules-list"></div>
+            <button id="addSortBtn" class="popover-add-btn"><svg class="b2h-icon b2h-icon-xs" aria-hidden="true"><use href="#lucide-plus"></use></svg> Add sort</button>
+          </div>
+        </div>
+
+        <!-- Group Button & Popover -->
+        <div class="toolbar-btn-group">
+          <button id="groupToggleBtn" class="toolbar-btn" title="Group items">
+            <svg class="b2h-icon" aria-hidden="true"><use href="#lucide-group"></use></svg>
+            <span>Group</span>
+          </button>
+          <div id="groupPopover" class="bases-popover popover-align-left">
+            <div class="popover-header">Group by</div>
+            <div id="groupRulesList" class="popover-rules-list"></div>
+            <button id="addGroupBtn" class="popover-add-btn"><svg class="b2h-icon b2h-icon-xs" aria-hidden="true"><use href="#lucide-plus"></use></svg> Add group</button>
+          </div>
+        </div>
+
+        <!-- Filter Button & Popover -->
+        <div class="toolbar-btn-group">
+          <button id="filterToggleBtn" class="toolbar-btn" title="Filter items">
+            <svg class="b2h-icon" aria-hidden="true"><use href="#lucide-filter"></use></svg>
+            <span>Filter</span>
+            <span id="filterCountBadge" class="toolbar-btn-badge" style="display:none;">0</span>
+          </button>
+          <div id="filterPopover" class="bases-popover popover-align-left" style="min-width: 440px;">
+            <div class="popover-header">Filter</div>
+            <div id="filterRulesList" class="popover-rules-list"></div>
+            <button id="addFilterBtn" class="popover-add-btn"><svg class="b2h-icon b2h-icon-xs" aria-hidden="true"><use href="#lucide-plus"></use></svg> Add filter</button>
+          </div>
+        </div>
+
+        <!-- Properties Button & Popover -->
+        <div class="toolbar-btn-group">
+          <button id="propertiesToggleBtn" class="toolbar-btn" title="Shown properties">
+            <svg class="b2h-icon" aria-hidden="true"><use href="#lucide-properties"></use></svg>
+            <span>Properties</span>
+          </button>
+          <div id="propertiesPopover" class="bases-popover popover-align-left">
+            <div class="popover-header">Properties</div>
+            <div id="propertiesList" class="popover-rules-list"></div>
+          </div>
+        </div>
+
+        <!-- Search Box -->
+        <div class="search-box">
+          <input type="text" id="searchInput" class="search-input" placeholder="Search..." autocomplete="off">
+          <button id="searchClearBtn" class="search-clear-btn" title="Clear search"><svg class="b2h-icon b2h-icon-xs" aria-hidden="true"><use href="#lucide-x"></use></svg></button>
+        </div>
+
+        <!-- Settings Button -->
+        <button id="settingsBtn" class="toolbar-btn" title="Display settings">
+          <svg class="b2h-icon" aria-hidden="true"><use href="#lucide-settings"></use></svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main-content" data-view-id="view-4g1wn6" data-view-name="📚 Books" data-view-type="cards">
+    <div class="content-status-bar bases-status-bar">
+      <span id="itemCountBadge" class="item-count-badge bases-item-count">0 items</span>
+    </div>
+
+    <div id="contentContainer" class="content-container bases-view-container"></div>
+  </main>
+
+  <!-- Settings drawer -->
+  <div id="settingsDrawer" class="settings-drawer">
+    <div class="drawer-header">
+      <span class="drawer-title">Settings</span>
+      <button id="drawerCloseBtn" class="drawer-close-btn"><svg class="b2h-icon" aria-hidden="true"><use href="#lucide-x"></use></svg></button>
+    </div>
+    <div class="drawer-body">
+      <div class="setting-row">
+        <span class="setting-label">Theme</span>
+        <span class="setting-desc">Switch between light and dark display</span>
+        <div class="theme-toggle-group">
+          <button id="themeLightBtn" class="theme-toggle-btn"><svg class="b2h-icon b2h-icon-sm" aria-hidden="true"><use href="#lucide-sun"></use></svg> Light</button>
+          <button id="themeDarkBtn" class="theme-toggle-btn active"><svg class="b2h-icon b2h-icon-sm" aria-hidden="true"><use href="#lucide-moon"></use></svg> Dark</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">Page width</span>
+        <span class="setting-desc">Adjust the reading width</span>
+        <div class="width-toggle-group">
+          <button id="widthNarrowBtn" class="width-toggle-btn">Narrow</button>
+          <button id="widthNormalBtn" class="width-toggle-btn active">Normal</button>
+          <button id="widthFullBtn" class="width-toggle-btn">Full</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">Font</span>
+        <span class="setting-desc">Select typography style</span>
+        <select id="fontSelect" class="font-select">
+          <option value="vazirmatn">Vazirmatn (Default)</option>
+          <option value="inter">Inter</option>
+          <option value="system-sans">System Sans-Serif</option>
+          <option value="system-serif">System Serif</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Note details modal -->
+  <div id="modalOverlay" class="modal-overlay"></div>
+  <div id="noteModal" class="note-modal">
+    <div class="modal-header">
+      <h2 id="modalTitle" class="modal-title"></h2>
+      <button id="modalCloseBtn" class="modal-close-btn"><svg class="b2h-icon" aria-hidden="true"><use href="#lucide-x"></use></svg></button>
+    </div>
+    <div class="modal-body">
+      <div id="modalProperties" class="modal-properties"></div>
+      <div id="modalMarkdownContent" class="modal-markdown-content" dir="auto"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    Powered by <a href="https://github.com/fardm/bases-to-html" target="_blank" rel="noopener">Bases to HTML</a>
+  </footer>
+
+  <!-- Data island -->
+  <script id="base-data" type="application/json">
+    {"base":{"id":"archive","title":"archive","formulas":{"starRating":"if(rating == 5, \"★★★★★\",\nif(rating == 4.5, \"★★★★⯨\",\nif(rating == 4, \"★★★★\",\nif(rating == 3.5, \"★★★⯨\",\nif(rating == 3, \"★★★\",\nif(rating == 2.5, \"★★⯨\",\nif(rating == 2, \"★★\",\nif(rating == 1.5, \"★⯨\",\nif(rating == 1, \"★\",\n\"\"\n)))))))))","Untitled":""},"summaries":{"icon":"values.flat()\n  .map(value.replace(/^#/, \"\"))\n  .unique()\n  .filter([\"animation\", \"author\", \"book\", \"documentary\", \"media\", \"movie\", \"podcast\", \"series\", \"short_film\", \"theater\"].contains(value))\n  .map(\n    if(value == \"animation\", \"🎈\",\n    if(value == \"author\", \"✍️\",\n    if(value == \"book\", \"📚\",\n    if(value == \"documentary\", \"🎥\",\n    if(value == \"media\", \"🖼️\",\n    if(value == \"movie\", \"🎬\",\n    if(value == \"podcast\", \"🎙️\",\n    if(value == \"series\", \"📺\",\n    if(value == \"short_film\", \"⌛\",\n    if(value == \"theater\", \"🎭\", null)\n    ))))))))))","Sum":"values.sum().round(2)","total length":"values.sum().round(2) + \" min\"","total page":"values.sum().round(2) + \" page\"","Filled":"values.filter(!value.isType(\"null\")).length","Unique":"values.unique().length","count item":"values.length","total length (h)":"(values.sum() / 60).round() + \" h\""},"views":[{"id":"view-4g1wn6","type":"cards","name":"📚 Books","filters":{"and":["file.hasTag(\"Book\")"]},"groupBy":{"property":"language","direction":"DESC"},"order":["file.name","pages","formula.starRating"],"sort":[{"property":"rating","direction":"DESC"}],"image":"note.cover","cardSize":180,"imageAspectRatio":1.5,"imageFit":""},{"id":"view-suuqcc","type":"cards","name":"🎬 Movies","filters":{"and":["file.hasTag(\"movie\")"]},"order":["file.name","year","scoreImdb"],"sort":[{"property":"rating","direction":"DESC"}],"image":"note.cover","cardSize":180,"imageAspectRatio":1.5,"imageFit":""},{"id":"view-o756bc","type":"table","name":"👁️ oveview","groupBy":{"property":"tags","direction":"ASC"},"order":["tags","file.name","length","pages"],"sort":[],"image":"note.cover","cardSize":180,"imageAspectRatio":1.5,"imageFit":"","columnSize":{"note.length":191,"note.pages":99},"summaries":{"length":"total length (h)","pages":"total page","file.name":"count item","tags":"icon","file.tags":"Filled"},"staticSummaries":{"grand":{"length":{"label":"","value":"38 h"},"pages":{"label":"","value":"800 page"},"file.name":{"label":"","value":25},"tags":{"label":"","value":"📚 🎬"},"file.tags":{"label":"","value":25}},"groups":{"book":{"length":{"label":"","value":"0 h"},"pages":{"label":"","value":"800 page"},"file.name":{"label":"","value":7},"tags":{"label":"","value":"📚"},"file.tags":{"label":"","value":7}},"movie":{"length":{"label":"","value":"38 h"},"pages":{"label":"","value":"0 page"},"file.name":{"label":"","value":18},"tags":{"label":"","value":"🎬"},"file.tags":{"label":"","value":18}}}}},{"id":"view-9jq7dp","type":"table","name":"Table","filters":{"and":["!file.tags.isEmpty()"]},"groupBy":{"property":"tags","direction":"ASC"},"order":["file.name","rating","date","badge"],"image":"","cardSize":180,"imageAspectRatio":1.5,"imageFit":"cover"}],"propertyTypes":{"file":{"id":"file","name":"file","type":"text","icon":"file-text"},"file.name":{"id":"file.name","name":"file.name","type":"text","icon":"file-text"},"file.tags":{"id":"file.tags","name":"file.tags","type":"list","icon":"tag"},"tags":{"id":"tags","name":"tags","type":"list","icon":"tag"},"author":{"id":"author","name":"author","type":"list","icon":"tag"},"pages":{"id":"pages","name":"pages","type":"number","icon":"hash"},"rating":{"id":"rating","name":"rating","type":"number","icon":"hash"},"date":{"id":"date","name":"date","type":"date","icon":"calendar"},"status":{"id":"status","name":"status","type":"text","icon":"type"},"cover":{"id":"cover","name":"cover","type":"link","icon":"link-2"},"aliases":{"id":"aliases","name":"aliases","type":"list","icon":"tag"},"badge":{"id":"badge","name":"badge","type":"list","icon":"tag"},"cover_source":{"id":"cover_source","name":"cover_source","type":"text","icon":"type"},"language":{"id":"language","name":"language","type":"text","icon":"type"},"translator":{"id":"translator","name":"translator","type":"text","icon":"type"},"source":{"id":"source","name":"source","type":"text","icon":"type"},"genre":{"id":"genre","name":"genre","type":"text","icon":"type"},"type":{"id":"type","name":"type","type":"text","icon":"type"},"publisher":{"id":"publisher","name":"publisher","type":"text","icon":"type"},"scoreImdb":{"id":"scoreImdb","name":"scoreImdb","type":"number","icon":"hash"},"length":{"id":"length","name":"length","type":"number","icon":"hash"},"country":{"id":"country","name":"country","type":"text","icon":"type"},"year":{"id":"year","name":"year","type":"number","icon":"hash"},"director":{"id":"director","name":"director","type":"text","icon":"type"},"formula.starRating":{"id":"formula.starRating","name":"formula.starRating","type":"text","icon":"calculator"},"formula.Untitled":{"id":"formula.Untitled","name":"formula.Untitled","type":"text","icon":"calculator"}}},"exportScope":"full","exportedData":"all","items":[{"id":"notes/The Sketchnote Handbook.md","title":"The Sketchnote Handbook","path":"notes/The Sketchnote Handbook.md","folder":"notes","tags":["book"],"properties":{"author":["Mike Rohde"],"pages":224,"rating":4,"date":"2024-08-15","status":"🟩 Done","cover":"[[sketchnote-handbook.webp]]","tags":["book"],"aliases":["کتاب راهنمای اسکچ نوت"],"badge":["🦉آموزنده"],"cover_source":"https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1354312096i/15858089.jpg","language":"en"},"computedFormulas":{"starRating":"★★★★","Untitled":""},"coverImage":"assets/images/sketchnote-handbook-ygctp7.webp","coverAssetRelativePath":"assets/images/sketchnote-handbook-ygctp7.webp","htmlContent":"","rawMarkdown":"---\nauthor:\n  - Mike Rohde\npages: 224\nrating: 4\ndate: 2024-08-15\nstatus: 🟩 Done\ncover: \"[[sketchnote-handbook.webp]]\"\ntags:\n  - book\naliases:\n  - کتاب راهنمای اسکچ نوت\nbadge:\n  - 🦉آموزنده\ncover_source: https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1354312096i/15858089.jpg\nlanguage: en\n---\n\n\n"},{"id":"notes/The PARA Method Simplify, Organize, and Master Your Digital Life.md","title":"The PARA Method Simplify, Organize, and Master Your Digital Life","path":"notes/The PARA Method Simplify, Organize, and Master Your Digital Life.md","folder":"notes","tags":["book"],"properties":{"author":"Tiago Forte","pages":203,"rating":3,"date":"2025-09-10","status":null,"cover":"[[para-method.webp]]","tags":["book"],"badge":["🪶خوش‌خوان"],"cover_source":"https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1683399809i/134634583.jpg","language":"en"},"computedFormulas":{"starRating":"★★★","Untitled":""},"coverImage":"assets/images/para-method-vq5zt8.webp","coverAssetRelativePath":"assets/images/para-method-vq5zt8.webp","htmlContent":"\u003cp dir=\"auto\">The system you use to organize information has to be so simple that it frees up your attention, instead of taking more of it. Your system must give you time, not take time. (25)\u003c/p>\n\u003chr>\n\u003cp dir=\"auto\">So much of what we call “organizing” is essentially procrastination in disguise. We tell ourselves we’re “getting ready” or “doing research,” pretending like that means progress. (37)\u003c/p>\n\u003chr>\n\u003cp dir=\"auto\">The Era of the Wisdom Worker\u003cbr>\nFor decades, we’ve called ourselves “knowledge workers” based on the fact that knowledge was our main asset. More than sixty years after that term was coined, the era of the knowledge worker is finally coming to a close. Knowledge has been commoditized and made universally accessible, first through search engines and now through increasingly advanced artificial intelligence. Which means there is no advantage to knowing any particular piece of knowledge anymore. We are now entering the era of the Wisdom Worker. (147)\u003c/p>","rawMarkdown":"---\nauthor: Tiago Forte\npages: 203\nrating: 3\ndate: 2025-09-10\nstatus:\ncover: \"[[para-method.webp]]\"\ntags:\n  - book\nbadge:\n  - 🪶خوش‌خوان\ncover_source: https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1683399809i/134634583.jpg\nlanguage: en\n---\n\nThe system you use to organize information has to be so simple that it frees up your attention, instead of taking more of it. Your system must give you time, not take time. (25)\n\n---\n\nSo much of what we call “organizing” is essentially procrastination in disguise. We tell ourselves we’re “getting ready” or “doing research,” pretending like that means progress. (37)\n\n\n\n---\n\nThe Era of the Wisdom Worker \nFor decades, we’ve called ourselves “knowledge workers” based on the fact that knowledge was our main asset. More than sixty years after that term was coined, the era of the knowledge worker is finally coming to a close. Knowledge has been commoditized and made universally accessible, first through search engines and now through increasingly advanced artificial intelligence. Which means there is no advantage to knowing any particular piece of knowledge anymore. We are now entering the era of the Wisdom Worker. (147)\n"},{"id":"notes/The Phantom of the Opera.md","title":"The Phantom of the Opera","path":"notes/The Phantom of the Opera.md","folder":"notes","tags":["book"],"properties":{"author":["Jennifer Bassett"],"translator":null,"pages":64,"source":"https://www.goodreads.com/book/show/2974076","cover":"[[The Phantom of the Opera.webp]]","cover_source":"https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1352395155i/2974076.jpg","date":"2026-07-10","tags":["book"],"badge":["🌀مرموز"],"rating":4,"genre":null,"status":null,"type":"Novel","publisher":"Oxford","language":"en"},"computedFormulas":{"starRating":"★★★★","Untitled":""},"coverImage":"assets/images/The Phantom of the Opera-15z6gb.webp","coverAssetRelativePath":"assets/images/The Phantom of the Opera-15z6gb.webp","htmlContent":"","rawMarkdown":"---\nauthor:\n  - Jennifer Bassett\ntranslator:\npages: 64\nsource: https://www.goodreads.com/book/show/2974076\ncover: \"[[The Phantom of the Opera.webp]]\"\ncover_source: https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1352395155i/2974076.jpg\ndate: 2026-07-10\ntags:\n  - book\nbadge:\n  - 🌀مرموز\nrating: 4\ngenre:\nstatus:\ntype: Novel\npublisher: Oxford\nlanguage: en\n---\n"},{"id":"notes/The Last Sherlock Holmes Story.md","title":"The Last Sherlock Holmes Story","path":"notes/The Last Sherlock Holmes Story.md","folder":"notes","tags":["book"],"properties":{"author":["Jennifer Bassett"],"translator":null,"pages":66,"source":"https://www.goodreads.com/book/show/129525929","cover":"[[The Last Sherlock Holmes Story.webp]]","cover_source":"https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1696735335i/129525929.jpg","date":"2026-09-29","tags":["book"],"badge":["🌀مرموز"],"rating":2.5,"genre":null,"type":"Novel","status":null,"publisher":"Oxford","language":"en"},"computedFormulas":{"starRating":"★★⯨","Untitled":""},"coverImage":"assets/images/The Last Sherlock Holmes Story-yaqzv3.webp","coverAssetRelativePath":"assets/images/The Last Sherlock Holmes Story-yaqzv3.webp","htmlContent":"","rawMarkdown":"---\nauthor:\n  - Jennifer Bassett\ntranslator:\npages: 66\nsource: https://www.goodreads.com/book/show/129525929\ncover: \"[[The Last Sherlock Holmes Story.webp]]\"\ncover_source: https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1696735335i/129525929.jpg\ndate: 2026-09-29\ntags:\n  - book\nbadge:\n  - 🌀مرموز\nrating: 2.5\ngenre:\ntype: Novel\nstatus:\npublisher: Oxford\nlanguage: en\n---\n"},{"id":"notes/The Adventures of Tom Sawyer.md","title":"The Adventures of Tom Sawyer","path":"notes/The Adventures of Tom Sawyer.md","folder":"notes","tags":["book"],"properties":{"author":["Nick Bullard"],"translator":null,"pages":63,"source":"https://www.goodreads.com/book/show/130639183-the-adventures-of-tom-sawyer-oxford-bookworms-library-stage-1-classic?from_search=true&from_srp=true&qid=uvGTxbTXjs&rank=3","cover":"[[The Adventures of Tom Sawyer.webp]]","cover_source":"https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1699799640i/130639183.jpg","date":"2026-07-16","tags":["book"],"badge":["🧩سرگرم‌کننده"],"rating":3.5,"genre":null,"type":"Novel","status":null,"publisher":"Oxford","language":"en"},"computedFormulas":{"starRating":"★★★⯨","Untitled":""},"coverImage":"assets/images/The Adventures of Tom Sawyer-4tnv2k.webp","coverAssetRelativePath":"assets/images/The Adventures of Tom Sawyer-4tnv2k.webp","htmlContent":"","rawMarkdown":"---\nauthor:\n  - Nick Bullard\ntranslator:\npages: 63\nsource: https://www.goodreads.com/book/show/130639183-the-adventures-of-tom-sawyer-oxford-bookworms-library-stage-1-classic?from_search=true&from_srp=true&qid=uvGTxbTXjs&rank=3\ncover: \"[[The Adventures of Tom Sawyer.webp]]\"\ncover_source: https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1699799640i/130639183.jpg\ndate: 2026-07-16\ntags:\n  - book\nbadge:\n  - 🧩سرگرم‌کننده\nrating: 3.5\ngenre:\ntype: Novel\nstatus:\npublisher: Oxford\nlanguage: en\n---\n"},{"id":"notes/Sherlock Holmes and the Missing Jewels.md","title":"Sherlock Holmes and the Missing Jewels","path":"notes/Sherlock Holmes and the Missing Jewels.md","folder":"notes","tags":["book"],"properties":{"author":null,"translator":null,"pages":84,"source":"https://www.goodreads.com/book/show/123459324","cover":"[[the Missing Jewels.webp]]","cover_source":"https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1679522740i/123459324.jpg","date":"2026-09-27","tags":["book"],"badge":["🌀مرموز"],"rating":4.5,"genre":null,"type":"Novel","status":null,"publisher":"Oxford","language":"en"},"computedFormulas":{"starRating":"★★★★⯨","Untitled":""},"coverImage":"assets/images/the Missing Jewels-bvgji1.webp","coverAssetRelativePath":"assets/images/the Missing Jewels-bvgji1.webp","htmlContent":"","rawMarkdown":"---\nauthor:\ntranslator:\npages: 84\nsource: https://www.goodreads.com/book/show/123459324\ncover: \"[[the Missing Jewels.webp]]\"\ncover_source: https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1679522740i/123459324.jpg\ndate: 2026-09-27\ntags:\n  - book\nbadge:\n  - 🌀مرموز\nrating: 4.5\ngenre:\ntype: Novel\nstatus:\npublisher: Oxford\nlanguage: en\n---\n"},{"id":"notes/Memento.md","title":"Memento","path":"notes/Memento.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"8.4","length":113,"country":"United States","genre":"Mystery, Thriller","year":"2000","rating":4.5,"date":"2021-01-04T00:00:00.000Z","cover":"[[memento.webp]]","tags":["movie"],"badge":["🌀مرموز"],"cover_source":"https://m.media-amazon.com/images/M/MV5BZTcyNjk1MjgtOWI3Mi00YzQwLWI5MTktMzY4ZmI2NDAyNzYzXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★★⯨","Untitled":""},"coverImage":"assets/images/memento-nad2lz.webp","coverAssetRelativePath":"assets/images/memento-nad2lz.webp","htmlContent":"\u003cp dir=\"auto\">\u003ca href=\"https://www.aparat.com/v/uovT7\" class=\"external-link\" rel=\"noopener nofollow\" target=\"_blank\">https://www.aparat.com/v/uovT7\u003c/a>\u003cbr>\nتوضیح فیلم از زبان خود نولان\u003c/p>","rawMarkdown":"---\ntype: film\nscoreImdb: \"8.4\"\nlength: 113\ncountry: United States\ngenre: Mystery, Thriller\nyear: \"2000\"\nrating: 4.5\ndate: 2021-01-04T00:00:00.000Z\ncover: \"[[memento.webp]]\"\ntags:\n  - movie\nbadge:\n  - 🌀مرموز\ncover_source: https://m.media-amazon.com/images/M/MV5BZTcyNjk1MjgtOWI3Mi00YzQwLWI5MTktMzY4ZmI2NDAyNzYzXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_SX300.jpg\n---\nhttps://www.aparat.com/v/uovT7\nتوضیح فیلم از زبان خود نولان\n"},{"id":"notes/Joker.md","title":"Joker","path":"notes/Joker.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"8.4","length":122,"country":"United States, Canada","genre":"Crime, Drama, Thriller","year":"2019","rating":3,"date":"2020-01-01T00:00:00.000Z","cover":"[[joker.webp]]","tags":["movie"],"cover_source":"https://m.media-amazon.com/images/M/MV5BNGVjNWI4ZGUtNzE0MS00YTJmLWE0ZDctN2ZiYTk2YmI3NTYyXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★","Untitled":""},"coverImage":"assets/images/joker-nw8a29.webp","coverAssetRelativePath":"assets/images/joker-nw8a29.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"8.4\"\nlength: 122\ncountry: United States, Canada\ngenre: Crime, Drama, Thriller\nyear: \"2019\"\nrating: 3\ndate: 2020-01-01T00:00:00.000Z\ncover: \"[[joker.webp]]\"\ntags:\n  - movie\ncover_source: https://m.media-amazon.com/images/M/MV5BNGVjNWI4ZGUtNzE0MS00YTJmLWE0ZDctN2ZiYTk2YmI3NTYyXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg\n---\n\n"},{"id":"notes/Interstellar.md","title":"Interstellar","path":"notes/Interstellar.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"8.7","length":169,"country":"United States, United Kingdom, Canada","genre":"Adventure, Drama, Sci-Fi","year":"2014","rating":5,"date":"2021-08-07T00:00:00.000Z","cover":"[[interstellar.webp]]","tags":["movie"],"badge":["🧲گیرا","🗝️ماجراجویانه"],"cover_source":"https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00OGEyLWFmMjktY2FiMmZkNWIyODZiXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★★★","Untitled":""},"coverImage":"assets/images/interstellar-uemzdl.webp","coverAssetRelativePath":"assets/images/interstellar-uemzdl.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"8.7\"\nlength: 169\ncountry: United States, United Kingdom, Canada\ngenre: Adventure, Drama, Sci-Fi\nyear: \"2014\"\nrating: 5\ndate: 2021-08-07T00:00:00.000Z\ncover: \"[[interstellar.webp]]\"\ntags:\n  - movie\nbadge:\n  - 🧲گیرا\n  - 🗝️ماجراجویانه\ncover_source: https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00OGEyLWFmMjktY2FiMmZkNWIyODZiXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_SX300.jpg\n---\n\n"},{"id":"notes/Hugo.md","title":"Hugo","path":"notes/Hugo.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"7.5","length":126,"country":"United States, United Kingdom","genre":"Adventure, Drama, Family","year":"2011","rating":4.5,"date":"2025-08-01T00:00:00.000Z","cover":"[[hugo.webp]]","tags":["movie"],"badge":["🌀مرموز","🗝️ماجراجویانه"],"cover_source":"https://m.media-amazon.com/images/M/MV5BMjAzNzk5MzgyNF5BMl5BanBnXkFtZTcwOTE4NDU5Ng@@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★★⯨","Untitled":""},"coverImage":"assets/images/hugo-vjdu77.webp","coverAssetRelativePath":"assets/images/hugo-vjdu77.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"7.5\"\nlength: 126\ncountry: United States, United Kingdom\ngenre: Adventure, Drama, Family\nyear: \"2011\"\nrating: 4.5\ndate: 2025-08-01T00:00:00.000Z\ncover: \"[[hugo.webp]]\"\ntags:\n  - movie\nbadge:\n  - 🌀مرموز\n  - 🗝️ماجراجویانه\ncover_source: https://m.media-amazon.com/images/M/MV5BMjAzNzk5MzgyNF5BMl5BanBnXkFtZTcwOTE4NDU5Ng@@._V1_SX300.jpg\n---\n\n"},{"id":"notes/Hit Man.md","title":"Hit Man","path":"notes/Hit Man.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":6.8,"length":115,"director":["Richard Linklater"],"genre":["Comedy","Crime","Romance"],"year":"2024","cover":"[[hit-man.webp]]","date":"2026-05-31T00:00:00.000Z","tags":["movie"],"rating":5,"badge":["🧩سرگرم‌کننده"],"cover_source":"https://m.media-amazon.com/images/M/MV5BNzFhMDZmYTctOTNmZi00MjVjLThkNGItMTJhOTI2NDkzMTFiXkEyXkFqcGc@._V1_.jpg"},"computedFormulas":{"starRating":"★★★★★","Untitled":""},"coverImage":"assets/images/hit-man-hbx3pa.webp","coverAssetRelativePath":"assets/images/hit-man-hbx3pa.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: 6.8\nlength: 115\ndirector:\n  - Richard Linklater\ngenre:\n  - Comedy\n  - Crime\n  - Romance\nyear: \"2024\"\ncover: \"[[hit-man.webp]]\"\ndate: 2026-05-31T00:00:00.000Z\ntags:\n  - movie\nrating: 5\nbadge:\n  - 🧩سرگرم‌کننده\ncover_source: https://m.media-amazon.com/images/M/MV5BNzFhMDZmYTctOTNmZi00MjVjLThkNGItMTJhOTI2NDkzMTFiXkEyXkFqcGc@._V1_.jpg\n---\n\n"},{"id":"notes/Heroic Losers.md","title":"Heroic Losers","path":"notes/Heroic Losers.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"7.2","length":116,"director":"Sebastián Borensztein","country":"Argentina, Spain","genre":"Adventure, Comedy, Crime","year":"2019","rating":4.5,"date":"2026-04-10T00:00:00.000Z","cover":"[[heroic-losers.webp]]","tags":["movie"],"badge":["😊دلنشین","🧲گیرا"],"cover_source":"https://m.media-amazon.com/images/M/MV5BZjZkODA3MTktMjc0ZS00ZDc4LThlZGItMDkzZGExN2QxZGY3XkEyXkFqcGc@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★★⯨","Untitled":""},"coverImage":"assets/images/heroic-losers-ypnehf.webp","coverAssetRelativePath":"assets/images/heroic-losers-ypnehf.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"7.2\"\nlength: 116\ndirector: Sebastián Borensztein\ncountry: Argentina, Spain\ngenre: Adventure, Comedy, Crime\nyear: \"2019\"\nrating: 4.5\ndate: 2026-04-10T00:00:00.000Z\ncover: \"[[heroic-losers.webp]]\"\ntags:\n  - movie\nbadge:\n  - 😊دلنشین\n  - 🧲گیرا\ncover_source: https://m.media-amazon.com/images/M/MV5BZjZkODA3MTktMjc0ZS00ZDc4LThlZGItMDkzZGExN2QxZGY3XkEyXkFqcGc@._V1_SX300.jpg\n---\n\n"},{"id":"notes/Her.md","title":"Her","path":"notes/Her.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"8.0","length":126,"country":"United States","genre":"Drama, Romance, Sci-Fi","year":"2013","rating":3,"date":"2025-01-16T00:00:00.000Z","cover":"[[her.webp]]","tags":["movie"],"cover_source":"https://m.media-amazon.com/images/M/MV5BMjA1Nzk0OTM2OF5BMl5BanBnXkFtZTgwNjU2NjEwMDE@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★","Untitled":""},"coverImage":"assets/images/her-725olv.webp","coverAssetRelativePath":"assets/images/her-725olv.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"8.0\"\nlength: 126\ncountry: United States\ngenre: Drama, Romance, Sci-Fi\nyear: \"2013\"\nrating: 3\ndate: 2025-01-16T00:00:00.000Z\ncover: \"[[her.webp]]\"\ntags:\n  - movie\ncover_source: https://m.media-amazon.com/images/M/MV5BMjA1Nzk0OTM2OF5BMl5BanBnXkFtZTgwNjU2NjEwMDE@._V1_SX300.jpg\n---\n\n"},{"id":"notes/Gulliver's Travels.md","title":"Gulliver's Travels","path":"notes/Gulliver's Travels.md","folder":"notes","tags":["book"],"properties":{"author":["Clare West","Jonathan Swift"],"translator":null,"pages":96,"source":"https://www.goodreads.com/en/book/show/3963600-gulliver-s-travels","cover":"[[Gulliver's-Travels.webp]]","cover_source":"https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1347607460i/3963600.jpg","date":"2026-11-19","tags":["book"],"badge":null,"rating":2.5,"genre":null,"type":null,"status":null,"publisher":"Oxford","language":"en"},"computedFormulas":{"starRating":"★★⯨","Untitled":""},"coverImage":"assets/images/Gulliver's-Travels-7u2n0u.webp","coverAssetRelativePath":"assets/images/Gulliver's-Travels-7u2n0u.webp","htmlContent":"","rawMarkdown":"---\nauthor:\n  - Clare West\n  - Jonathan Swift\ntranslator:\npages: 96\nsource: https://www.goodreads.com/en/book/show/3963600-gulliver-s-travels\ncover: \"[[Gulliver's-Travels.webp]]\"\ncover_source: https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1347607460i/3963600.jpg\ndate: 2026-11-19\ntags:\n  - book\nbadge:\nrating: 2.5\ngenre:\ntype:\nstatus:\npublisher: Oxford\nlanguage: en\n---\n\n"},{"id":"notes/Gone Girl.md","title":"Gone Girl","path":"notes/Gone Girl.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"8.1","length":149,"country":"United States","genre":"Drama, Mystery, Thriller","year":"2014","rating":2,"date":"2023-04-03T00:00:00.000Z","cover":"[[gone-girl.webp]]","tags":["movie"],"cover_source":"https://m.media-amazon.com/images/M/MV5BMTk0MDQ3MzAzOV5BMl5BanBnXkFtZTgwNzU1NzE3MjE@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★","Untitled":""},"coverImage":"assets/images/gone-girl-2shpd4.webp","coverAssetRelativePath":"assets/images/gone-girl-2shpd4.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"8.1\"\nlength: 149\ncountry: United States\ngenre: Drama, Mystery, Thriller\nyear: \"2014\"\nrating: 2\ndate: 2023-04-03T00:00:00.000Z\ncover: \"[[gone-girl.webp]]\"\ntags:\n  - movie\ncover_source: https://m.media-amazon.com/images/M/MV5BMTk0MDQ3MzAzOV5BMl5BanBnXkFtZTgwNzU1NzE3MjE@._V1_SX300.jpg\n---\n\n"},{"id":"notes/Fury.md","title":"Fury","path":"notes/Fury.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"7.6","length":134,"country":"United States, China","genre":"Action, Drama, War","year":"2014","rating":3,"date":"2025-11-12T00:00:00.000Z","cover":"[[fury.webp]]","tags":["movie"],"badge":["🧩سرگرم‌کننده"],"cover_source":"https://m.media-amazon.com/images/M/MV5BMjA4MDU0NTUyN15BMl5BanBnXkFtZTgwMzQxMzY4MjE@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★","Untitled":""},"coverImage":"assets/images/fury-inom5g.webp","coverAssetRelativePath":"assets/images/fury-inom5g.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"7.6\"\nlength: 134\ncountry: United States, China\ngenre: Action, Drama, War\nyear: \"2014\"\nrating: 3\ndate: 2025-11-12T00:00:00.000Z\ncover: \"[[fury.webp]]\"\ntags:\n  - movie\nbadge:\n  - 🧩سرگرم‌کننده\ncover_source: https://m.media-amazon.com/images/M/MV5BMjA4MDU0NTUyN15BMl5BanBnXkFtZTgwMzQxMzY4MjE@._V1_SX300.jpg\n---\n\n"},{"id":"notes/Forrest Gump.md","title":"Forrest Gump","path":"notes/Forrest Gump.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"8.8","length":142,"country":"United States","genre":"Drama, Romance","year":"1994","rating":4,"date":"2023-11-25T00:00:00.000Z","cover":"[[forrest-gump.webp]]","tags":["movie"],"cover_source":"https://m.media-amazon.com/images/M/MV5BNWIwODRlZTUtY2U3ZS00Yzg1LWJhNzYtMmZiYmEyNmU1NjMzXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★★","Untitled":""},"coverImage":"assets/images/forrest-gump-dvvvsf.webp","coverAssetRelativePath":"assets/images/forrest-gump-dvvvsf.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"8.8\"\nlength: 142\ncountry: United States\ngenre: Drama, Romance\nyear: \"1994\"\nrating: 4\ndate: 2023-11-25T00:00:00.000Z\ncover: \"[[forrest-gump.webp]]\"\ntags:\n  - movie\ncover_source: https://m.media-amazon.com/images/M/MV5BNWIwODRlZTUtY2U3ZS00Yzg1LWJhNzYtMmZiYmEyNmU1NjMzXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_SX300.jpg\n---\n\n"},{"id":"notes/Dead Poets Society.md","title":"Dead Poets Society","path":"notes/Dead Poets Society.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"8.1","length":128,"country":"United States","genre":"Comedy, Drama","year":"1989","rating":5,"date":"2025-03-21T00:00:00.000Z","cover":"[[dead-poets-society.webp]]","tags":["movie"],"badge":["🧲گیرا"],"cover_source":"https://m.media-amazon.com/images/M/MV5BMDYwNGVlY2ItMWYxMS00YjZiLWE5MTAtYWM5NWQ2ZWJjY2Q3XkEyXkFqcGc@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★★★","Untitled":""},"coverImage":"assets/images/dead-poets-society-jvgl7f.webp","coverAssetRelativePath":"assets/images/dead-poets-society-jvgl7f.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"8.1\"\nlength: 128\ncountry: United States\ngenre: Comedy, Drama\nyear: \"1989\"\nrating: 5\ndate: 2025-03-21T00:00:00.000Z\ncover: \"[[dead-poets-society.webp]]\"\ntags:\n  - movie\nbadge:\n  - 🧲گیرا\ncover_source: https://m.media-amazon.com/images/M/MV5BMDYwNGVlY2ItMWYxMS00YjZiLWE5MTAtYWM5NWQ2ZWJjY2Q3XkEyXkFqcGc@._V1_SX300.jpg\n---\n\n"},{"id":"notes/CODA.md","title":"CODA","path":"notes/CODA.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"8.0","length":111,"country":"France, Canada, United States","genre":"Comedy, Drama, Music","year":"2021","rating":5,"date":"2021-09-08T00:00:00.000Z","cover":"[[coda.webp]]","tags":["movie"],"badge":["✨حال‌خوب‌کن"],"cover_source":"https://m.media-amazon.com/images/M/MV5BYzkyNzNiMDItMGU1Yy00NmEyLWE4N2ItMjkzMDZmMmVhNDU4XkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★★★","Untitled":""},"coverImage":"assets/images/coda-yna2tz.webp","coverAssetRelativePath":"assets/images/coda-yna2tz.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"8.0\"\nlength: 111\ncountry: France, Canada, United States\ngenre: Comedy, Drama, Music\nyear: \"2021\"\nrating: 5\ndate: 2021-09-08T00:00:00.000Z\ncover: \"[[coda.webp]]\"\ntags:\n  - movie\nbadge:\n  - ✨حال‌خوب‌کن\ncover_source: https://m.media-amazon.com/images/M/MV5BYzkyNzNiMDItMGU1Yy00NmEyLWE4N2ItMjkzMDZmMmVhNDU4XkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg\n---\n\n"},{"id":"notes/Close-Up.md","title":"Close-Up","path":"notes/Close-Up.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"8.2","length":98,"country":"Iran","genre":"Biography, Crime, Drama","year":"1990","rating":3,"date":"2024-05-12T00:00:00.000Z","cover":"[[close-up.webp]]","tags":["movie"],"cover_source":"https://m.media-amazon.com/images/M/MV5BOTNlNWFiNTAtZTMxYS00NzgxLTlmOGYtZjY4NWVlNDlmZDJlXkEyXkFqcGc@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★","Untitled":""},"coverImage":"assets/images/close-up-7j3k7y.webp","coverAssetRelativePath":"assets/images/close-up-7j3k7y.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"8.2\"\nlength: 98\ncountry: Iran\ngenre: Biography, Crime, Drama\nyear: \"1990\"\nrating: 3\ndate: 2024-05-12T00:00:00.000Z\ncover: \"[[close-up.webp]]\"\ntags:\n  - movie\ncover_source: https://m.media-amazon.com/images/M/MV5BOTNlNWFiNTAtZTMxYS00NzgxLTlmOGYtZjY4NWVlNDlmZDJlXkEyXkFqcGc@._V1_SX300.jpg\n---\n\n"},{"id":"notes/A Beautiful Mind.md","title":"A Beautiful Mind","path":"notes/A Beautiful Mind.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"8.2","length":135,"country":"United States","genre":"Biography, Drama, Mystery","year":"2001","rating":4.5,"date":"2024-12-06T00:00:00.000Z","cover":"[[a-beautiful-mind.webp]]","tags":["movie"],"badge":["🌀مرموز"],"cover_source":"https://m.media-amazon.com/images/M/MV5BNzljZTk5ZDgtZTQ1Zi00NTM4LThlOGUtZDk2MGM4NDQ4NWQyXkEyXkFqcGc@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★★⯨","Untitled":""},"coverImage":"assets/images/a-beautiful-mind-kw6md4.webp","coverAssetRelativePath":"assets/images/a-beautiful-mind-kw6md4.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"8.2\"\nlength: 135\ncountry: United States\ngenre: Biography, Drama, Mystery\nyear: \"2001\"\nrating: 4.5\ndate: 2024-12-06T00:00:00.000Z\ncover: \"[[a-beautiful-mind.webp]]\"\ntags:\n  - movie\nbadge:\n  - 🌀مرموز\ncover_source: https://m.media-amazon.com/images/M/MV5BNzljZTk5ZDgtZTQ1Zi00NTM4LThlOGUtZDk2MGM4NDQ4NWQyXkEyXkFqcGc@._V1_SX300.jpg\n---\n\n"},{"id":"notes/310 to Yuma.md","title":"310 to Yuma","path":"notes/310 to Yuma.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"7.6","length":122,"country":"United States","genre":"Action, Crime, Drama","year":"2007","rating":5,"date":"2024-09-14T00:00:00.000Z","cover":"[[310-to-yuma.webp]]","tags":["movie"],"badge":["🧩سرگرم‌کننده"],"cover_source":"https://m.media-amazon.com/images/M/MV5BODE0NTcxNTQzNF5BMl5BanBnXkFtZTcwMzczOTIzMw@@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★★★","Untitled":""},"coverImage":"assets/images/310-to-yuma-8xkow5.webp","coverAssetRelativePath":"assets/images/310-to-yuma-8xkow5.webp","htmlContent":"\u003cp dir=\"auto\">تحلیل و نقد فیلم: \u003ca href=\"https://cinema.gamefa.com/119559/%D8%AA%D8%AD%D9%84%DB%8C%D9%84-%D9%88-%D9%86%D9%82%D8%AF-%D9%81%DB%8C%D9%84%D9%85-%DB%B3%DB%B1%DB%B0to-yuma-%D8%9B-%DA%AF%D9%88%D9%87%D8%B1%D9%87%D8%A7-%D9%88-%DA%86%D8%A7%D9%84%D8%B4%E2%80%8C%D9%87/\" class=\"external-link\" rel=\"noopener nofollow\" aria-label=\"https://cinema.gamefa.com/119559/%D8%AA%D8%AD%D9%84%DB%8C%D9%84-%D9%88-%D9%86%D9%82%D8%AF-%D9%81%DB%8C%D9%84%D9%85-%DB%B3%DB%B1%DB%B0to-yuma-%D8%9B-%DA%AF%D9%88%D9%87%D8%B1%D9%87%D8%A7-%D9%88-%DA%86%D8%A7%D9%84%D8%B4%E2%80%8C%D9%87/\" data-tooltip-position=\"top\" target=\"_blank\">لینک\u003c/a>\u003c/p>","rawMarkdown":"---\ntype: film\nscoreImdb: \"7.6\"\nlength: 122\ncountry: United States\ngenre: Action, Crime, Drama\nyear: \"2007\"\nrating: 5\ndate: 2024-09-14T00:00:00.000Z\ncover: \"[[310-to-yuma.webp]]\"\ntags:\n  - movie\nbadge:\n  - 🧩سرگرم‌کننده\ncover_source: https://m.media-amazon.com/images/M/MV5BODE0NTcxNTQzNF5BMl5BanBnXkFtZTcwMzczOTIzMw@@._V1_SX300.jpg\n---\n\n\nتحلیل و نقد فیلم: [لینک](https://cinema.gamefa.com/119559/%D8%AA%D8%AD%D9%84%DB%8C%D9%84-%D9%88-%D9%86%D9%82%D8%AF-%D9%81%DB%8C%D9%84%D9%85-%DB%B3%DB%B1%DB%B0to-yuma-%D8%9B-%DA%AF%D9%88%D9%87%D8%B1%D9%87%D8%A7-%D9%88-%DA%86%D8%A7%D9%84%D8%B4%E2%80%8C%D9%87/)\n"},{"id":"notes/2001 A Space Odyssey.md","title":"2001 A Space Odyssey","path":"notes/2001 A Space Odyssey.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"8.3","length":149,"director":"Stanley Kubrick","country":"United Kingdom, United States","genre":"Adventure, Sci-Fi","year":"1968","rating":3,"date":"2026-02-22T00:00:00.000Z","cover":"[[2001-a-space-odyssey.webp]]","tags":["movie"],"badge":["🌀مرموز"],"cover_source":"https://m.media-amazon.com/images/M/MV5BNjU0NDFkMTQtZWY5OS00MmZhLTg3Y2QtZmJhMzMzMWYyYjc2XkEyXkFqcGc@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★","Untitled":""},"coverImage":"assets/images/2001-a-space-odyssey-5esax1.webp","coverAssetRelativePath":"assets/images/2001-a-space-odyssey-5esax1.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"8.3\"\nlength: 149\ndirector: Stanley Kubrick\ncountry: United Kingdom, United States\ngenre: Adventure, Sci-Fi\nyear: \"1968\"\nrating: 3\ndate: 2026-02-22T00:00:00.000Z\ncover: \"[[2001-a-space-odyssey.webp]]\"\ntags:\n  - movie\nbadge:\n  - 🌀مرموز\ncover_source: https://m.media-amazon.com/images/M/MV5BNjU0NDFkMTQtZWY5OS00MmZhLTg3Y2QtZmJhMzMzMWYyYjc2XkEyXkFqcGc@._V1_SX300.jpg\n---\n\n\n"},{"id":"notes/12 Years a Slave.md","title":"12 Years a Slave","path":"notes/12 Years a Slave.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"8.1","length":134,"country":"United States, United Kingdom","genre":"Biography, Drama, History","year":"2013","rating":4.5,"date":"2020-01-01T00:00:00.000Z","cover":"[[12-years-a-slave.webp]]","tags":["movie"],"badge":["☕تلخ"],"cover_source":"https://m.media-amazon.com/images/M/MV5BMjExMTEzODkyN15BMl5BanBnXkFtZTcwNTU4NTc4OQ@@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★★⯨","Untitled":""},"coverImage":"assets/images/12-years-a-slave-jjt48a.webp","coverAssetRelativePath":"assets/images/12-years-a-slave-jjt48a.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"8.1\"\nlength: 134\ncountry: United States, United Kingdom\ngenre: Biography, Drama, History\nyear: \"2013\"\nrating: 4.5\ndate: 2020-01-01T00:00:00.000Z\ncover: \"[[12-years-a-slave.webp]]\"\ntags:\n  - movie\nbadge:\n  - ☕تلخ\ncover_source: https://m.media-amazon.com/images/M/MV5BMjExMTEzODkyN15BMl5BanBnXkFtZTcwNTU4NTc4OQ@@._V1_SX300.jpg\n---\n\n"},{"id":"notes/12 Angry Men.md","title":"12 Angry Men","path":"notes/12 Angry Men.md","folder":"notes","tags":["movie"],"properties":{"type":"film","scoreImdb":"9.0","length":96,"country":"United States","genre":"Crime, Drama","year":"1957","rating":5,"date":"2023-10-21T00:00:00.000Z","cover":"[[12-angry-men.webp]]","tags":["movie"],"badge":["🦉آموزنده"],"cover_source":"https://m.media-amazon.com/images/M/MV5BMWU4N2FjNzYtNTVkNC00NzQ0LTg0MjAtYTJlMjFhNGUxZDFmXkEyXkFqcGdeQXVyNjc1NTYyMjg@._V1_SX300.jpg"},"computedFormulas":{"starRating":"★★★★★","Untitled":""},"coverImage":"assets/images/12-angry-men-171lx0.webp","coverAssetRelativePath":"assets/images/12-angry-men-171lx0.webp","htmlContent":"","rawMarkdown":"---\ntype: film\nscoreImdb: \"9.0\"\nlength: 96\ncountry: United States\ngenre: Crime, Drama\nyear: \"1957\"\nrating: 5\ndate: 2023-10-21T00:00:00.000Z\ncover: \"[[12-angry-men.webp]]\"\ntags:\n  - movie\nbadge:\n  - 🦉آموزنده\ncover_source: https://m.media-amazon.com/images/M/MV5BMWU4N2FjNzYtNTVkNC00NzQ0LTg0MjAtYTJlMjFhNGUxZDFmXkEyXkFqcGdeQXVyNjc1NTYyMjg@._V1_SX300.jpg\n---\n"}]}
+  </script>
+
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

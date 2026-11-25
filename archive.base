@@ -1,0 +1,112 @@
+summaries:
+  icon: |-
+    values.flat()
+      .map(value.replace(/^#/, ""))
+      .unique()
+      .filter(["animation", "author", "book", "documentary", "media", "movie", "podcast", "series", "short_film", "theater"].contains(value))
+      .map(
+        if(value == "animation", "🎈",
+        if(value == "author", "✍️",
+        if(value == "book", "📚",
+        if(value == "documentary", "🎥",
+        if(value == "media", "🖼️",
+        if(value == "movie", "🎬",
+        if(value == "podcast", "🎙️",
+        if(value == "series", "📺",
+        if(value == "short_film", "⌛",
+        if(value == "theater", "🎭", null)
+        ))))))))))
+  Sum: values.sum().round(2)
+  total length: values.sum().round(2) + " min"
+  total page: values.sum().round(2) + " page"
+  Filled: values.filter(!value.isType("null")).length
+  Unique: values.unique().length
+  count item: values.length
+  total length (h): (values.sum() / 60).round() + " h"
+formulas:
+  starRating: |-
+    if(rating == 5, "★★★★★",
+    if(rating == 4.5, "★★★★⯨",
+    if(rating == 4, "★★★★",
+    if(rating == 3.5, "★★★⯨",
+    if(rating == 3, "★★★",
+    if(rating == 2.5, "★★⯨",
+    if(rating == 2, "★★",
+    if(rating == 1.5, "★⯨",
+    if(rating == 1, "★",
+    ""
+    )))))))))
+  Untitled: ""
+views:
+  - type: cards
+    name: 📚 Books
+    filters:
+      and:
+        - file.hasTag("Book")
+    groupBy:
+      property: language
+      direction: DESC
+    order:
+      - file.name
+      - pages
+      - formula.starRating
+    sort:
+      - property: rating
+        direction: DESC
+    image: note.cover
+    cardSize: 180
+    imageAspectRatio: 1.5
+    imageFit: ""
+  - type: cards
+    name: 🎬 Movies
+    filters:
+      and:
+        - file.hasTag("movie")
+    order:
+      - file.name
+      - year
+      - scoreImdb
+    sort:
+      - property: rating
+        direction: DESC
+    image: note.cover
+    cardSize: 180
+    imageAspectRatio: 1.5
+    imageFit: ""
+  - type: table
+    name: 👁️ oveview
+    groupBy:
+      property: tags
+      direction: ASC
+    order:
+      - tags
+      - file.name
+      - length
+      - pages
+    sort: []
+    summaries:
+      length: total length (h)
+      pages: total page
+      file.name: count item
+      tags: icon
+      file.tags: Filled
+    image: note.cover
+    cardSize: 180
+    imageAspectRatio: 1.5
+    imageFit: ""
+    columnSize:
+      note.length: 191
+      note.pages: 99
+  - type: table
+    name: Table
+    filters:
+      and:
+        - "!file.tags.isEmpty()"
+    groupBy:
+      property: tags
+      direction: ASC
+    order:
+      - file.name
+      - rating
+      - date
+      - badge
