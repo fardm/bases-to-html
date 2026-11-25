@@ -58,26 +58,38 @@ export class VaultScanner {
 			const frontmatter = cache?.frontmatter ? { ...cache.frontmatter } : {};
 			delete frontmatter.position;
 
+			const frontmatterTags: string[] = [];
+			const addFrontmatterTag = (t: unknown) => {
+				const clean = toSafeString(t).replace(/^#/, '').trim();
+				if (clean && !frontmatterTags.includes(clean)) frontmatterTags.push(clean);
+			};
+			if (frontmatter.tags !== undefined && frontmatter.tags !== null) {
+				if (Array.isArray(frontmatter.tags)) {
+					for (const t of frontmatter.tags) addFrontmatterTag(t);
+				} else if (typeof frontmatter.tags === 'string') {
+					for (const t of frontmatter.tags.split(/[\s,]+/)) addFrontmatterTag(t);
+				} else {
+					addFrontmatterTag(frontmatter.tags);
+				}
+			}
+			if (frontmatter.tag !== undefined && frontmatter.tag !== null) {
+				if (Array.isArray(frontmatter.tag)) {
+					for (const t of frontmatter.tag) addFrontmatterTag(t);
+				} else if (typeof frontmatter.tag === 'string') {
+					for (const t of frontmatter.tag.split(/[\s,]+/)) addFrontmatterTag(t);
+				} else {
+					addFrontmatterTag(frontmatter.tag);
+				}
+			}
+			if (frontmatter.tags !== undefined || frontmatter.tag !== undefined) {
+				frontmatter.tags = frontmatterTags;
+			}
+
 			const rawTags = (cache ? getAllTags(cache) || [] : []).map((t) =>
 				t.replace(/^#/, ''),
 			);
-			const addTag = (t: unknown) => {
-				const clean = toSafeString(t).replace(/^#/, '').trim();
-				if (clean && !rawTags.includes(clean)) rawTags.push(clean);
-			};
-			if (frontmatter.tags) {
-				if (Array.isArray(frontmatter.tags)) {
-					for (const t of frontmatter.tags) addTag(t);
-				} else if (typeof frontmatter.tags === 'string') {
-					for (const t of frontmatter.tags.split(/[\s,]+/)) addTag(t);
-				}
-			}
-			if (frontmatter.tag) {
-				if (Array.isArray(frontmatter.tag)) {
-					for (const t of frontmatter.tag) addTag(t);
-				} else if (typeof frontmatter.tag === 'string') {
-					for (const t of frontmatter.tag.split(/[\s,]+/)) addTag(t);
-				}
+			for (const t of frontmatterTags) {
+				if (!rawTags.includes(t)) rawTags.push(t);
 			}
 
 			const context: EvaluationContext = {
@@ -182,6 +194,7 @@ export class VaultScanner {
 			file: { id: 'file', name: 'file', type: 'text', icon: 'file-text' },
 			'file.name': { id: 'file.name', name: 'file.name', type: 'text', icon: 'file-text' },
 			'file.tags': { id: 'file.tags', name: 'file.tags', type: 'list', icon: 'tag' },
+			tags: { id: 'tags', name: 'tags', type: 'list', icon: 'tag' },
 		};
 
 		for (const [propName, counts] of propertyTypeOccurrences.entries()) {

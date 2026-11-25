@@ -68,8 +68,19 @@ export function resolvePropertyPath(
 	if (cleanPath === 'file.folder') {
 		return context.file.folder;
 	}
-	if (cleanPath === 'file.tags' || cleanPath === 'tags' || cleanPath === 'file.tag') {
+	if (cleanPath === 'file.tags' || cleanPath === 'file.tag') {
 		return context.file.tags;
+	}
+	if (cleanPath === 'tags') {
+		const fmTags = context.properties['tags'] ?? context.properties['tag'];
+		if (fmTags !== undefined && fmTags !== null) {
+			if (Array.isArray(fmTags)) return fmTags;
+			if (typeof fmTags === 'string') {
+				return fmTags.split(/[\s,]+/).map((t) => t.replace(/^#/, '').trim()).filter(Boolean);
+			}
+			return [toSafeString(fmTags).replace(/^#/, '').trim()].filter(Boolean);
+		}
+		return [];
 	}
 
 	if (cleanPath.startsWith('formula.')) {
@@ -169,7 +180,7 @@ export function evaluateExpression(
 
 			if (
 				(targetName === 'file' && methodName === 'hasTag') ||
-				((targetName === 'file' || targetName === 'file.tags' || targetName === 'tags') &&
+				((targetName === 'file' || targetName === 'file.tags' || targetName === 'file.tag') &&
 					(methodName === 'contains' || methodName === 'hasTag'))
 			) {
 				const tagToFind = toSafeString(args[0]).replace(/^#/, '').toLowerCase();
@@ -180,7 +191,7 @@ export function evaluateExpression(
 			}
 
 			const targetVal = resolvePropertyPath(targetName, context);
-			if (methodName === 'contains') {
+			if (methodName === 'contains' || methodName === 'hasTag') {
 				const rawSearch = toSafeString(args[0]).toLowerCase();
 				const cleanSearch = rawSearch.replace(/^#/, '');
 				const isTagTarget =

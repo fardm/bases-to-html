@@ -465,9 +465,10 @@ export function getClientScript(): string {
           var contProp = contMatch[1];
           var contVal = contMatch[2];
           var isTag = contProp === 'file.tags' || contProp === 'tags' || contProp.toLowerCase().indexOf('tag') !== -1;
+          var propName = (contProp === 'file.tags' || contProp === 'file.tag') ? 'file.tags' : contProp;
           rules.push({
             conjunction: rules.length === 0 ? 'where' : 'and',
-            property: isTag ? 'file.tags' : contProp,
+            property: propName,
             operator: isTag ? 'has_tag' : 'contains',
             value: isTag ? contVal.replace(/^#/, '') : contVal
           });
@@ -536,6 +537,7 @@ export function getClientScript(): string {
     var set = new Set();
     set.add('file.name');
     set.add('file.tags');
+    set.add('tags');
 
     Object.keys(propertyTypes).forEach(function(k) {
       set.add(k);
@@ -599,10 +601,23 @@ export function getClientScript(): string {
     var clean = propPath.trim();
     if (clean === 'file.name' || clean === 'name' || clean === 'file') return item.title;
     if (clean === 'file.path') return item.path;
-    if (clean === 'file.tags' || clean === 'tags' || clean === 'file.tag') {
-      if (item.tags && Array.isArray(item.tags) && item.tags.length > 0) return item.tags;
+    if (clean === 'file.tags' || clean === 'file.tag') {
+      if (item.tags && Array.isArray(item.tags)) return item.tags;
       if (item.properties && item.properties.tags) {
         return Array.isArray(item.properties.tags) ? item.properties.tags : [item.properties.tags];
+      }
+      return [];
+    }
+    if (clean === 'tags') {
+      if (item.properties) {
+        var fmTags = item.properties.tags !== undefined ? item.properties.tags : item.properties.tag;
+        if (fmTags !== undefined && fmTags !== null) {
+          if (Array.isArray(fmTags)) return fmTags;
+          if (typeof fmTags === 'string') {
+            return fmTags.split(/[\\s,]+/).map(function(t) { return t.replace(/^#/, '').trim(); }).filter(Boolean);
+          }
+          return [String(fmTags).replace(/^#/, '').trim()].filter(Boolean);
+        }
       }
       return [];
     }
@@ -1278,7 +1293,8 @@ export function getClientScript(): string {
       var groups = new Map();
       filtered.forEach(function(it) {
         var keyVal = getItemValue(it, groupProp);
-        var keyStr = (keyVal === undefined || keyVal === null || keyVal === '') ? 'Uncategorized' : String(keyVal);
+        var isValEmpty = keyVal === undefined || keyVal === null || keyVal === '' || (Array.isArray(keyVal) && keyVal.length === 0);
+        var keyStr = isValEmpty ? 'Uncategorized' : (Array.isArray(keyVal) ? keyVal.join(', ') : String(keyVal));
         if (!groups.has(keyStr)) groups.set(keyStr, []);
         groups.get(keyStr).push(it);
       });
@@ -1338,7 +1354,8 @@ export function getClientScript(): string {
       var groups = new Map();
       itemsList.forEach(function(it) {
         var keyVal = getItemValue(it, groupProp);
-        var keyStr = (keyVal === undefined || keyVal === null || keyVal === '') ? 'Uncategorized' : String(keyVal);
+        var isValEmpty = keyVal === undefined || keyVal === null || keyVal === '' || (Array.isArray(keyVal) && keyVal.length === 0);
+        var keyStr = isValEmpty ? 'Uncategorized' : (Array.isArray(keyVal) ? keyVal.join(', ') : String(keyVal));
         if (!groups.has(keyStr)) groups.set(keyStr, []);
         groups.get(keyStr).push(it);
       });
@@ -1994,8 +2011,11 @@ export function getClientScript(): string {
 
   function compareValuesClient(a, b, isAsc) {
     if (a === b) return 0;
-    if (a === undefined || a === null) return isAsc ? 1 : -1;
-    if (b === undefined || b === null) return isAsc ? -1 : 1;
+    var isEmptyA = a === undefined || a === null || a === '' || (Array.isArray(a) && a.length === 0);
+    var isEmptyB = b === undefined || b === null || b === '' || (Array.isArray(b) && b.length === 0);
+    if (isEmptyA && isEmptyB) return 0;
+    if (isEmptyA) return isAsc ? 1 : -1;
+    if (isEmptyB) return isAsc ? -1 : 1;
 
     var numA = Number(a);
     var numB = Number(b);
@@ -2003,8 +2023,8 @@ export function getClientScript(): string {
       return isAsc ? numA - numB : numB - numA;
     }
 
-    var strA = String(a).toLowerCase();
-    var strB = String(b).toLowerCase();
+    var strA = (Array.isArray(a) ? a.join(', ') : String(a)).toLowerCase();
+    var strB = (Array.isArray(b) ? b.join(', ') : String(b)).toLowerCase();
     var res = strA.localeCompare(strB);
     return isAsc ? res : -res;
   }
