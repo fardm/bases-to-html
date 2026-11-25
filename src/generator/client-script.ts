@@ -34,7 +34,9 @@ export function getClientScript(): string {
   }
 
   var searchQuery = '';
-  var activeFilterTree = { type: 'group', conjunction: 'and', children: [] };
+  var globalFilterTree = { type: 'group', conjunction: 'and', children: [] };
+  var viewFilterTree = { type: 'group', conjunction: 'and', children: [] };
+  var activePillDropdown = null;
   var activeSortRules = [];
   var activeGroupRule = null;
   var activeOrder = [];
@@ -141,8 +143,6 @@ export function getClientScript(): string {
   var filterToggleBtn = document.getElementById('filterToggleBtn');
   var filterPopover = document.getElementById('filterPopover');
   var filterRulesList = document.getElementById('filterRulesList');
-  var addFilterBtn = document.getElementById('addFilterBtn');
-  var addFilterGroupBtn = document.getElementById('addFilterGroupBtn');
   var filterCountBadge = document.getElementById('filterCountBadge');
 
   var propertiesToggleBtn = document.getElementById('propertiesToggleBtn');
@@ -270,6 +270,7 @@ export function getClientScript(): string {
     });
 
     document.addEventListener('click', function() {
+      closeActivePillDropdown();
       closeAllPopovers();
     });
 
@@ -294,59 +295,17 @@ export function getClientScript(): string {
         renderCards();
       });
     }
+  }
 
-    if (addFilterBtn) {
-      addFilterBtn.addEventListener('click', function() {
-        var allProps = getAllAvailablePropertyKeys();
-        var defaultProp = allProps[0] || 'file.name';
-        var pType = getPropertyType(defaultProp);
-        var opList = getOperatorsForProperty(defaultProp, pType);
-        var defaultOp = opList[0] ? opList[0].id : 'is';
-        if (!activeFilterTree || activeFilterTree.type !== 'group') {
-          activeFilterTree = { type: 'group', conjunction: 'and', children: [] };
-        }
-        activeFilterTree.children.push({
-          type: 'rule',
-          property: defaultProp,
-          operator: defaultOp,
-          value: ''
-        });
-        saveFilterState();
-        renderFilterPopover();
-        renderCards();
-      });
+  function closeActivePillDropdown() {
+    if (activePillDropdown && activePillDropdown.parentNode) {
+      activePillDropdown.parentNode.removeChild(activePillDropdown);
     }
-
-    if (addFilterGroupBtn) {
-      addFilterGroupBtn.addEventListener('click', function() {
-        var allProps = getAllAvailablePropertyKeys();
-        var defaultProp = allProps[0] || 'file.name';
-        var pType = getPropertyType(defaultProp);
-        var opList = getOperatorsForProperty(defaultProp, pType);
-        var defaultOp = opList[0] ? opList[0].id : 'is';
-        if (!activeFilterTree || activeFilterTree.type !== 'group') {
-          activeFilterTree = { type: 'group', conjunction: 'and', children: [] };
-        }
-        activeFilterTree.children.push({
-          type: 'group',
-          conjunction: 'and',
-          children: [
-            {
-              type: 'rule',
-              property: defaultProp,
-              operator: defaultOp,
-              value: ''
-            }
-          ]
-        });
-        saveFilterState();
-        renderFilterPopover();
-        renderCards();
-      });
-    }
+    activePillDropdown = null;
   }
 
   function closeAllPopovers() {
+    closeActivePillDropdown();
     [sortPopover, groupPopover, filterPopover, propertiesPopover].forEach(function(pop) {
       if (pop) pop.classList.remove('open');
     });
@@ -376,7 +335,7 @@ export function getClientScript(): string {
 
     if (filterToggleBtn) {
       var isFilterOpen = filterPopover && filterPopover.classList.contains('open');
-      var filterCount = countFilterRules(activeFilterTree);
+      var filterCount = countFilterRules(globalFilterTree) + countFilterRules(viewFilterTree);
       var hasFilters = filterCount > 0;
       filterToggleBtn.classList.toggle('active', isFilterOpen || hasFilters);
       if (filterCountBadge) {
@@ -448,23 +407,37 @@ export function getClientScript(): string {
       activeGroupRule = null;
     }
 
-    // 3. Filter state
+    // 3. Filter state (All views + This view)
+    var savedGlobalFilters = localStorage.getItem(storagePrefix + 'global_filters');
+    if (savedGlobalFilters) {
+      try {
+        var parsedGlobal = JSON.parse(savedGlobalFilters);
+        globalFilterTree = (parsedGlobal && parsedGlobal.type === 'group' && Array.isArray(parsedGlobal.children))
+          ? parsedGlobal
+          : parseInitialSingleFilter(base.filters);
+      } catch (e) {
+        globalFilterTree = parseInitialSingleFilter(base.filters);
+      }
+    } else {
+      globalFilterTree = parseInitialSingleFilter(base.filters);
+    }
+
     var savedFilters = localStorage.getItem(storagePrefix + viewKey + '_filters');
     if (savedFilters) {
       try {
         var parsedSaved = JSON.parse(savedFilters);
         if (parsedSaved && parsedSaved.type === 'group' && Array.isArray(parsedSaved.children)) {
-          activeFilterTree = parsedSaved;
+          viewFilterTree = parsedSaved;
         } else if (Array.isArray(parsedSaved)) {
-          activeFilterTree = migrateFlatFilterRules(parsedSaved);
+          viewFilterTree = migrateFlatFilterRules(parsedSaved);
         } else {
-          activeFilterTree = parseInitialViewFilters(base.filters, view.filters);
+          viewFilterTree = parseInitialSingleFilter(view.filters);
         }
       } catch (e) {
-        activeFilterTree = parseInitialViewFilters(base.filters, view.filters);
+        viewFilterTree = parseInitialSingleFilter(view.filters);
       }
     } else {
-      activeFilterTree = parseInitialViewFilters(base.filters, view.filters);
+      viewFilterTree = parseInitialSingleFilter(view.filters);
     }
 
     // 4. Properties order state
@@ -855,31 +828,13 @@ export function getClientScript(): string {
     return null;
   }
 
-  function parseInitialViewFilters(baseFilters, viewFilters) {
+  function parseInitialSingleFilter(rawFilter) {
     var root = { type: 'group', conjunction: 'and', children: [] };
-    var nodes = [];
-    if (baseFilters) {
-      var bf = parseFilterNode(baseFilters);
-      if (bf) nodes.push(bf);
-    }
-    if (viewFilters) {
-      var vf = parseFilterNode(viewFilters);
-      if (vf) nodes.push(vf);
-    }
-    if (nodes.length === 0) return root;
-    if (nodes.length === 1) {
-      if (nodes[0].type === 'group') return nodes[0];
-      root.children.push(nodes[0]);
-      return root;
-    }
-    // Both baseFilters and viewFilters exist: combine with AND
-    nodes.forEach(function(n) {
-      if (n.type === 'group' && n.conjunction === 'and') {
-        n.children.forEach(function(c) { root.children.push(c); });
-      } else {
-        root.children.push(n);
-      }
-    });
+    if (!rawFilter) return root;
+    var parsed = parseFilterNode(rawFilter);
+    if (!parsed) return root;
+    if (parsed.type === 'group') return parsed;
+    root.children.push(parsed);
     return root;
   }
 
@@ -898,8 +853,13 @@ export function getClientScript(): string {
     updateToolbarActiveStates();
   }
 
-  function saveFilterState() {
-    localStorage.setItem(storagePrefix + getViewStorageKey() + '_filters', JSON.stringify(activeFilterTree));
+  function saveGlobalFilterState() {
+    localStorage.setItem(storagePrefix + 'global_filters', JSON.stringify(globalFilterTree));
+    updateToolbarActiveStates();
+  }
+
+  function saveViewFilterState() {
+    localStorage.setItem(storagePrefix + getViewStorageKey() + '_filters', JSON.stringify(viewFilterTree));
     updateToolbarActiveStates();
   }
 
@@ -1266,20 +1226,169 @@ export function getClientScript(): string {
     return op;
   }
 
+  function createSearchablePillSelect(opts) {
+    var wrapper = document.createElement('div');
+    wrapper.className = 'pill-select-wrapper';
+
+    var currentOpt = null;
+    for (var i = 0; i < opts.options.length; i++) {
+      if (opts.options[i].value === opts.value) {
+        currentOpt = opts.options[i];
+        break;
+      }
+    }
+
+    var trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'pill-select pill-select-trigger';
+    trigger.setAttribute('data-value', opts.value || '');
+
+    var labelSpan = document.createElement('span');
+    labelSpan.textContent = currentOpt ? currentOpt.label : (opts.value || '');
+    trigger.appendChild(labelSpan);
+
+    var chevronSpan = document.createElement('span');
+    chevronSpan.className = 'pill-select-chevron';
+    chevronSpan.textContent = '↕';
+    trigger.appendChild(chevronSpan);
+
+    trigger.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var wasSame = activePillDropdown && activePillDropdown._trigger === trigger;
+      closeActivePillDropdown();
+      if (wasSame) return;
+
+      var menu = document.createElement('div');
+      menu.className = 'pill-dropdown-menu';
+      menu._trigger = trigger;
+      menu.addEventListener('click', function(ev) { ev.stopPropagation(); });
+
+      // Search input at top of dropdown
+      var searchWrap = document.createElement('div');
+      searchWrap.className = 'pill-dropdown-search-wrap';
+      searchWrap.appendChild(createIconSvg('search', 'b2h-icon-xs'));
+
+      var searchBox = document.createElement('input');
+      searchBox.type = 'text';
+      searchBox.className = 'pill-dropdown-search';
+      searchBox.placeholder = 'Search...';
+      searchWrap.appendChild(searchBox);
+      menu.appendChild(searchWrap);
+
+      var listEl = document.createElement('div');
+      listEl.className = 'pill-dropdown-options';
+      menu.appendChild(listEl);
+
+      function renderOptions(filterText) {
+        listEl.innerHTML = '';
+        var q = String(filterText || '').trim().toLowerCase();
+        var filtered = opts.options.filter(function(o) {
+          return !q || o.label.toLowerCase().indexOf(q) !== -1 || String(o.value).toLowerCase().indexOf(q) !== -1;
+        });
+
+        if (filtered.length === 0) {
+          var emptyEl = document.createElement('div');
+          emptyEl.className = 'pill-dropdown-empty';
+          emptyEl.textContent = 'No matches';
+          listEl.appendChild(emptyEl);
+          return;
+        }
+
+        filtered.forEach(function(o) {
+          var itemBtn = document.createElement('button');
+          itemBtn.type = 'button';
+          itemBtn.className = 'pill-dropdown-option' + (o.value === opts.value ? ' selected' : '');
+          if (o.icon) {
+            itemBtn.appendChild(createIconSvg(o.icon, 'b2h-icon-xs'));
+          }
+          var txt = document.createElement('span');
+          txt.textContent = o.label;
+          itemBtn.appendChild(txt);
+          itemBtn.addEventListener('click', function(ev) {
+            ev.stopPropagation();
+            closeActivePillDropdown();
+            opts.onChange(o.value);
+          });
+          listEl.appendChild(itemBtn);
+        });
+      }
+
+      searchBox.addEventListener('input', function(ev) {
+        renderOptions(ev.target.value);
+      });
+      searchBox.addEventListener('keydown', function(ev) {
+        if (ev.key === 'Escape') {
+          closeActivePillDropdown();
+        } else if (ev.key === 'Enter') {
+          var firstOpt = listEl.querySelector('.pill-dropdown-option');
+          if (firstOpt) firstOpt.click();
+        }
+      });
+
+      renderOptions('');
+
+      if (typeof trigger.getBoundingClientRect === 'function') {
+        var rect = trigger.getBoundingClientRect();
+        menu.style.top = (rect.bottom + 4) + 'px';
+        menu.style.left = rect.left + 'px';
+      }
+
+      if (document.body && document.body.appendChild) {
+        document.body.appendChild(menu);
+      } else {
+        wrapper.appendChild(menu);
+      }
+      activePillDropdown = menu;
+      if (typeof searchBox.focus === 'function') searchBox.focus();
+    });
+
+    wrapper.appendChild(trigger);
+    return {
+      el: wrapper,
+      value: opts.value,
+      trigger: trigger
+    };
+  }
+
   function renderFilterPopover() {
     if (!filterRulesList) return;
     filterRulesList.innerHTML = '';
 
-    if (!activeFilterTree || activeFilterTree.type !== 'group') {
-      activeFilterTree = { type: 'group', conjunction: 'and', children: [] };
+    if (!globalFilterTree || globalFilterTree.type !== 'group') {
+      globalFilterTree = { type: 'group', conjunction: 'and', children: [] };
+    }
+    if (!viewFilterTree || viewFilterTree.type !== 'group') {
+      viewFilterTree = { type: 'group', conjunction: 'and', children: [] };
     }
 
     var allProps = getAllAvailablePropertyKeys();
-    renderFilterGroupNode(activeFilterTree, filterRulesList, true, null, -1, allProps);
+
+    // Section 1: All views (global Base filters)
+    var globalSection = document.createElement('div');
+    globalSection.className = 'filter-scope-section';
+    globalSection.setAttribute('data-scope', 'all-views');
+    var globalHeader = document.createElement('div');
+    globalHeader.className = 'filter-scope-header';
+    globalHeader.textContent = 'All views';
+    globalSection.appendChild(globalHeader);
+    renderFilterGroupNode(globalFilterTree, globalSection, true, null, -1, allProps, saveGlobalFilterState);
+    filterRulesList.appendChild(globalSection);
+
+    // Section 2: This view (view-specific filters)
+    var viewSection = document.createElement('div');
+    viewSection.className = 'filter-scope-section';
+    viewSection.setAttribute('data-scope', 'this-view');
+    var viewHeader = document.createElement('div');
+    viewHeader.className = 'filter-scope-header';
+    viewHeader.textContent = 'This view';
+    viewSection.appendChild(viewHeader);
+    renderFilterGroupNode(viewFilterTree, viewSection, true, null, -1, allProps, saveViewFilterState);
+    filterRulesList.appendChild(viewSection);
+
     updateToolbarActiveStates();
   }
 
-  function renderFilterGroupNode(groupNode, container, isRoot, parentGroup, indexInParent, allProps) {
+  function renderFilterGroupNode(groupNode, container, isRoot, parentGroup, indexInParent, allProps, onSave) {
     var box = document.createElement('div');
     box.className = isRoot ? 'filter-group-box' : 'filter-group-box filter-group-nested';
 
@@ -1290,7 +1399,7 @@ export function getClientScript(): string {
     var conjSelect = document.createElement('select');
     conjSelect.className = 'filter-group-conjunction-select';
     [
-      { id: 'and', label: 'All of the following are true' },
+      { id: 'and', label: 'All the following are true' },
       { id: 'or', label: 'Any of the following are true' },
       { id: 'not', label: 'None of the following are true' }
     ].forEach(function(optDef) {
@@ -1302,7 +1411,7 @@ export function getClientScript(): string {
     });
     conjSelect.addEventListener('change', function(e) {
       groupNode.conjunction = e.target.value;
-      saveFilterState();
+      onSave();
       renderFilterPopover();
       renderCards();
     });
@@ -1312,10 +1421,10 @@ export function getClientScript(): string {
       var delGroupBtn = document.createElement('button');
       delGroupBtn.className = 'popover-rule-delete';
       delGroupBtn.title = 'Remove filter group';
-      delGroupBtn.appendChild(createIconSvg('x', 'b2h-icon-sm'));
+      delGroupBtn.appendChild(createIconSvg('trash', 'b2h-icon-sm'));
       delGroupBtn.addEventListener('click', function() {
         parentGroup.children.splice(indexInParent, 1);
-        saveFilterState();
+        onSave();
         renderFilterPopover();
         renderCards();
       });
@@ -1329,7 +1438,7 @@ export function getClientScript(): string {
 
     (groupNode.children || []).forEach(function(child, idx) {
       if (child.type === 'group') {
-        renderFilterGroupNode(child, childrenContainer, false, groupNode, idx, allProps);
+        renderFilterGroupNode(child, childrenContainer, false, groupNode, idx, allProps, onSave);
         return;
       }
 
@@ -1351,7 +1460,7 @@ export function getClientScript(): string {
         conjBtn.title = 'Toggle AND / OR';
         conjBtn.addEventListener('click', function() {
           groupNode.conjunction = (groupNode.conjunction === 'or') ? 'and' : 'or';
-          saveFilterState();
+          onSave();
           renderFilterPopover();
           renderCards();
         });
@@ -1367,10 +1476,10 @@ export function getClientScript(): string {
         var delExprBtn = document.createElement('button');
         delExprBtn.className = 'popover-rule-delete';
         delExprBtn.title = 'Remove filter';
-        delExprBtn.appendChild(createIconSvg('x', 'b2h-icon-sm'));
+        delExprBtn.appendChild(createIconSvg('trash', 'b2h-icon-sm'));
         delExprBtn.addEventListener('click', function() {
           groupNode.children.splice(idx, 1);
-          saveFilterState();
+          onSave();
           renderFilterPopover();
           renderCards();
         });
@@ -1394,81 +1503,65 @@ export function getClientScript(): string {
       propIconSpan.appendChild(createIconSvg(meta.icon || 'type', 'b2h-icon-xs'));
       pill.appendChild(propIconSpan);
 
-      // 1. Property Select
+      // 1. Property Select (Searchable)
       var propOptions = allProps.slice();
       if (rule.property && propOptions.indexOf(rule.property) === -1) {
         propOptions.push(rule.property);
       }
-      var propSelect = document.createElement('select');
-      propSelect.className = 'pill-select';
-      propOptions.forEach(function(p) {
-        var m = getPropertyMetadata(p);
-        var opt = document.createElement('option');
-        opt.value = p;
-        opt.textContent = m.name;
-        if (p === rule.property) opt.selected = true;
-        propSelect.appendChild(opt);
-      });
-
-      propSelect.addEventListener('change', function(e) {
-        rule.property = e.target.value;
-        var pTypeNew = getPropertyType(rule.property);
-        var opListNew = getOperatorsForProperty(rule.property, pTypeNew);
-        rule.operator = normalizeOperatorAlias(rule.operator, pTypeNew);
-        var stillValid = opListNew.some(function(o) { return o.id === rule.operator; });
-        if (!stillValid && opListNew[0]) {
-          rule.operator = opListNew[0].id;
+      var propSelectCtrl = createSearchablePillSelect({
+        value: rule.property,
+        options: propOptions.map(function(p) {
+          var m = getPropertyMetadata(p);
+          return { value: p, label: m.name, icon: m.icon || 'type' };
+        }),
+        onChange: function(newProp) {
+          rule.property = newProp;
+          var pTypeNew = getPropertyType(rule.property);
+          var opListNew = getOperatorsForProperty(rule.property, pTypeNew);
+          rule.operator = normalizeOperatorAlias(rule.operator, pTypeNew);
+          var stillValid = opListNew.some(function(o) { return o.id === rule.operator; });
+          if (!stillValid && opListNew[0]) {
+            rule.operator = opListNew[0].id;
+          }
+          onSave();
+          renderFilterPopover();
+          renderCards();
         }
-        saveFilterState();
-        renderFilterPopover();
-        renderCards();
       });
-      pill.appendChild(propSelect);
+      pill.appendChild(propSelectCtrl.el);
 
       var divider1 = document.createElement('span');
       divider1.className = 'pill-divider';
       pill.appendChild(divider1);
 
-      // 2. Operator Select
+      // 2. Operator Select (Searchable)
       var pType = getPropertyType(rule.property);
       var opList = getOperatorsForProperty(rule.property, pType);
       rule.operator = normalizeOperatorAlias(rule.operator, pType);
 
-      var opSelect = document.createElement('select');
-      opSelect.className = 'pill-select';
       var currentOpDef = null;
-
       opList.forEach(function(opDef) {
-        var opt = document.createElement('option');
-        opt.value = opDef.id;
-        opt.textContent = opDef.label;
-        if (opDef.id === rule.operator) {
-          opt.selected = true;
-          currentOpDef = opDef;
-        }
-        opSelect.appendChild(opt);
+        if (opDef.id === rule.operator) currentOpDef = opDef;
       });
-
-      // Preserve any custom/cross-type operator instead of silently overwriting it
       if (!currentOpDef && rule.operator) {
         currentOpDef = { id: rule.operator, label: rule.operator };
-        var extraOpt = document.createElement('option');
-        extraOpt.value = rule.operator;
-        extraOpt.textContent = rule.operator;
-        extraOpt.selected = true;
-        opSelect.appendChild(extraOpt);
+        opList = opList.concat([currentOpDef]);
       } else if (!currentOpDef && opList[0]) {
         currentOpDef = opList[0];
         rule.operator = currentOpDef.id;
       }
 
-      opSelect.addEventListener('change', function(e) {
-        rule.operator = e.target.value;
-        saveFilterState();
-        renderFilterPopover();
-        renderCards();
+      var opSelectCtrl = createSearchablePillSelect({
+        value: rule.operator,
+        options: opList.map(function(o) { return { value: o.id, label: o.label }; }),
+        onChange: function(newOp) {
+          rule.operator = newOp;
+          onSave();
+          renderFilterPopover();
+          renderCards();
+        }
       });
-      pill.appendChild(opSelect);
+      pill.appendChild(opSelectCtrl.el);
 
       // 3. Value Input (if operator requires value)
       if (currentOpDef && !currentOpDef.noValue) {
@@ -1493,7 +1586,7 @@ export function getClientScript(): string {
 
         valInput.addEventListener('input', function(e) {
           rule.value = pType === 'number' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value;
-          saveFilterState();
+          onSave();
           renderCards();
         });
         pill.appendChild(valInput);
@@ -1501,21 +1594,21 @@ export function getClientScript(): string {
 
       row.appendChild(pill);
 
-      // Delete Button with Lucide X icon
+      // Delete Button with Lucide trash icon
       var delBtn = document.createElement('button');
       delBtn.className = 'popover-rule-delete';
       delBtn.title = 'Remove filter';
-      delBtn.appendChild(createIconSvg('x', 'b2h-icon-sm'));
+      delBtn.appendChild(createIconSvg('trash', 'b2h-icon-sm'));
       delBtn.addEventListener('click', function() {
         groupNode.children.splice(idx, 1);
-        saveFilterState();
+        onSave();
         renderFilterPopover();
         renderCards();
       });
       row.appendChild(delBtn);
 
       setupDragDrop(row, idx, groupNode.children, function() {
-        saveFilterState();
+        onSave();
         renderFilterPopover();
         renderCards();
       });
@@ -1525,30 +1618,56 @@ export function getClientScript(): string {
 
     box.appendChild(childrenContainer);
 
-    if (!isRoot) {
-      var nestedActions = document.createElement('div');
-      nestedActions.className = 'popover-add-actions';
-      var addNestedRuleBtn = document.createElement('button');
-      addNestedRuleBtn.className = 'popover-add-btn';
-      addNestedRuleBtn.appendChild(createIconSvg('plus', 'b2h-icon-xs'));
-      addNestedRuleBtn.appendChild(document.createTextNode(' Add filter'));
-      addNestedRuleBtn.addEventListener('click', function() {
-        var defaultProp = allProps[0] || 'file.name';
-        var pTypeDef = getPropertyType(defaultProp);
-        var opListDef = getOperatorsForProperty(defaultProp, pTypeDef);
-        groupNode.children.push({
-          type: 'rule',
-          property: defaultProp,
-          operator: opListDef[0] ? opListDef[0].id : 'is',
-          value: ''
-        });
-        saveFilterState();
-        renderFilterPopover();
-        renderCards();
+    var groupActions = document.createElement('div');
+    groupActions.className = 'popover-add-actions';
+
+    var addRuleBtn = document.createElement('button');
+    addRuleBtn.className = 'popover-add-btn';
+    addRuleBtn.appendChild(createIconSvg('plus', 'b2h-icon-xs'));
+    addRuleBtn.appendChild(document.createTextNode(' Add filter'));
+    addRuleBtn.addEventListener('click', function() {
+      var defaultProp = allProps[0] || 'file.name';
+      var pTypeDef = getPropertyType(defaultProp);
+      var opListDef = getOperatorsForProperty(defaultProp, pTypeDef);
+      groupNode.children.push({
+        type: 'rule',
+        property: defaultProp,
+        operator: opListDef[0] ? opListDef[0].id : 'is',
+        value: ''
       });
-      nestedActions.appendChild(addNestedRuleBtn);
-      box.appendChild(nestedActions);
-    }
+      onSave();
+      renderFilterPopover();
+      renderCards();
+    });
+    groupActions.appendChild(addRuleBtn);
+
+    var addGroupNestedBtn = document.createElement('button');
+    addGroupNestedBtn.className = 'popover-add-btn';
+    addGroupNestedBtn.appendChild(createIconSvg('plus', 'b2h-icon-xs'));
+    addGroupNestedBtn.appendChild(document.createTextNode(' Add filter group'));
+    addGroupNestedBtn.addEventListener('click', function() {
+      var defaultProp = allProps[0] || 'file.name';
+      var pTypeDef = getPropertyType(defaultProp);
+      var opListDef = getOperatorsForProperty(defaultProp, pTypeDef);
+      groupNode.children.push({
+        type: 'group',
+        conjunction: 'and',
+        children: [
+          {
+            type: 'rule',
+            property: defaultProp,
+            operator: opListDef[0] ? opListDef[0].id : 'is',
+            value: ''
+          }
+        ]
+      });
+      onSave();
+      renderFilterPopover();
+      renderCards();
+    });
+    groupActions.appendChild(addGroupNestedBtn);
+
+    box.appendChild(groupActions);
 
     container.appendChild(box);
   }
@@ -1634,7 +1753,7 @@ export function getClientScript(): string {
   // =========================================================================
 
   function passesFilterRules(item) {
-    return evaluateFilterNode(item, activeFilterTree);
+    return evaluateFilterNode(item, globalFilterTree) && evaluateFilterNode(item, viewFilterTree);
   }
 
   function evaluateFilterNode(item, node) {
