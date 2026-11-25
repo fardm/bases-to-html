@@ -41,6 +41,7 @@ interface SelectedCssFile {
 	name: string;
 	content: string;
 	source: 'vault' | 'disk';
+	vaultPath?: string;
 }
 
 export class ExportModal extends Modal {
@@ -66,31 +67,67 @@ export class ExportModal extends Modal {
 	constructor(app: App, plugin: BasesToHtmlPlugin) {
 		super(app);
 		this.plugin = plugin;
+		const prefs = plugin.settings.exportPreferences;
 
-		this.documentTitle = 'My archive';
-		this.exportFormat = 'single';
-		this.exportScope = 'full';
-		this.exportedData = 'all';
-		this.fontMode = plugin.settings.fontMode || 'default';
-		this.googleFontName = plugin.settings.googleFontName || '';
-		if (plugin.settings.localFontPath && plugin.settings.localFontName) {
-			const fmt = getFontFormatInfo(plugin.settings.localFontName);
-			if (fmt) {
+		this.documentTitle = prefs.documentTitle || 'My archive';
+		this.exportFormat = prefs.exportFormat === 'multi' ? 'multi' : 'single';
+		this.exportScope =
+			prefs.exportScope === 'bases-only' ||
+			prefs.exportScope === 'properties-only' ||
+			prefs.exportScope === 'full'
+				? prefs.exportScope
+				: 'full';
+		this.exportedData = prefs.exportedData === 'filtered' ? 'filtered' : 'all';
+		this.fontMode =
+			prefs.fontMode === 'google' || prefs.fontMode === 'local' ? prefs.fontMode : 'default';
+		this.googleFontName = prefs.googleFontName || '';
+
+		if (prefs.localFontPath && prefs.localFontName) {
+			const fmt = getFontFormatInfo(prefs.localFontName);
+			if (fmt && this.pathExistsOnDisk(prefs.localFontPath)) {
 				this.localFont = {
-					fileName: plugin.settings.localFontName,
-					filePath: plugin.settings.localFontPath,
+					fileName: prefs.localFontName,
+					filePath: prefs.localFontPath,
 					mimeType: fmt.mimeType,
 					format: fmt.format,
 				};
 			}
 		}
+
 		this.selectedCssFiles = [];
-		this.customCssText = '';
+		this.customCssText = prefs.customCssText || '';
 		this.cssSource = 'None';
-		this.outputMode = plugin.settings.outputMode || 'vault';
-		this.vaultOutputFolder = plugin.settings.vaultOutputFolder || '';
-		this.localOutputFolder = plugin.settings.localOutputFolder || '';
-		this.openExportedFiles = true;
+		this.outputMode = prefs.outputMode === 'local' ? 'local' : 'vault';
+
+		const savedVaultFolder = prefs.vaultOutputFolder || '';
+		if (
+			savedVaultFolder &&
+			!(app.vault.getAbstractFileByPath(savedVaultFolder) instanceof TFolder)
+		) {
+			this.vaultOutputFolder = '';
+		} else {
+			this.vaultOutputFolder = savedVaultFolder;
+		}
+
+		const savedLocalFolder = prefs.localOutputFolder || '';
+		this.localOutputFolder =
+			savedLocalFolder && this.pathExistsOnDisk(savedLocalFolder) ? savedLocalFolder : '';
+
+		this.openExportedFiles =
+			typeof prefs.openExportedFiles === 'boolean' ? prefs.openExportedFiles : true;
+	}
+
+	private pathExistsOnDisk(targetPath: string): boolean {
+		try {
+			const req = (window as unknown as { require?: (mod: string) => unknown }).require;
+			const fs = req?.('fs') as { existsSync?: (p: string) => boolean } | undefined;
+			if (typeof fs?.existsSync === 'function') {
+				return fs.existsSync(targetPath);
+			}
+		} catch {
+			// Ignore on non-Node environments
+		}
+		return true;
 	}
 
 	onOpen() {
@@ -522,6 +559,7 @@ export class ExportModal extends Modal {
 							name: file.name,
 							content,
 							source: 'vault',
+							vaultPath: file.path,
 						});
 						renderCssFilesList();
 						updateSourceBadge();
@@ -582,6 +620,34 @@ export class ExportModal extends Modal {
 			});
 		};
 		renderCssFilesList();
+
+		// Restore saved vault CSS files (skipping any that no longer exist)
+		const savedVaultCssPaths = this.plugin.settings.exportPreferences.customCssVaultPaths || [];
+		if (savedVaultCssPaths.length > 0 && this.selectedCssFiles.length === 0) {
+			void (async () => {
+				for (const cssPath of savedVaultCssPaths) {
+					const abstractFile = this.app.vault.getAbstractFileByPath(cssPath);
+					if (!(abstractFile instanceof TFile)) continue;
+					try {
+						const content = await this.app.vault.read(abstractFile);
+						const fileId = `vault:${abstractFile.path}`;
+						if (!this.selectedCssFiles.some((f) => f.id === fileId)) {
+							this.selectedCssFiles.push({
+								id: fileId,
+								name: abstractFile.name,
+								content,
+								source: 'vault',
+								vaultPath: abstractFile.path,
+							});
+						}
+					} catch {
+						// Ignore unreadable CSS file
+					}
+				}
+				renderCssFilesList();
+				updateSourceBadge();
+			})();
+		}
 
 		const cssTextarea = customCssSection.createEl('textarea', {
 			cls: 'b2h-custom-css-textarea',
@@ -902,14 +968,7 @@ export class ExportModal extends Modal {
 		exportBtn.disabled = true;
 		exportBtn.setText('Exporting...');
 
-		this.plugin.settings.outputMode = this.outputMode;
-		this.plugin.settings.vaultOutputFolder = this.vaultOutputFolder;
-		this.plugin.settings.localOutputFolder = this.localOutputFolder;
-		this.plugin.settings.fontMode = this.fontMode;
-		this.plugin.settings.googleFontName = this.googleFontName.trim();
-		this.plugin.settings.localFontPath = this.localFont?.filePath || '';
-		this.plugin.settings.localFontName = this.localFont?.fileName || '';
-		await this.plugin.saveSettings();
+		await this.saveCurrentPreferences();
 
 		const combinedCss = [
 			...this.selectedCssFiles.map((f) => f.content),
@@ -950,7 +1009,30 @@ export class ExportModal extends Modal {
 		}
 	}
 
+	private async saveCurrentPreferences(): Promise<void> {
+		this.plugin.settings.exportPreferences = {
+			documentTitle: this.documentTitle || 'My archive',
+			exportFormat: this.exportFormat,
+			exportedData: this.exportedData,
+			exportScope: this.exportScope,
+			fontMode: this.fontMode,
+			googleFontName: this.googleFontName.trim(),
+			localFontPath: this.localFont?.filePath || '',
+			localFontName: this.localFont?.fileName || '',
+			customCssText: this.customCssText,
+			customCssVaultPaths: this.selectedCssFiles
+				.filter((f) => f.source === 'vault' && f.vaultPath)
+				.map((f) => f.vaultPath as string),
+			outputMode: this.outputMode,
+			vaultOutputFolder: this.vaultOutputFolder.trim(),
+			localOutputFolder: this.localOutputFolder.trim(),
+			openExportedFiles: this.openExportedFiles,
+		};
+		await this.plugin.saveSettings();
+	}
+
 	onClose() {
+		void this.saveCurrentPreferences();
 		if (this.documentClickHandler) {
 			activeDocument.removeEventListener('click', this.documentClickHandler);
 			this.documentClickHandler = undefined;
