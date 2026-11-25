@@ -2,17 +2,14 @@
 
 ![image](screenshot1.webp)
 
-**Bases to HTML** is an Obsidian plugin that turns your **Bases** views into standalone, responsive, and interactive HTML pages. No backend or external runtime is required—ideal for offline archiving, sharing, or publishing to static hosts like GitHub Pages.
+**Bases to HTML** is an Obsidian plugin that converts your **Bases** views into standalone, interactive, and responsive HTML pages.
 
-**[Live Demo](https://fardm.github.io/bases-to-html/)** — Explore and interact with a live example of the exported HTML page. Try searching, filtering, sorting, grouping, and switching between views.
+📥 **[Install from Obsidian Community Plugins](https://community.obsidian.md/plugins/bases-to-html)**
 
----
+🌐 **[Live Demo](https://fardm.github.io/bases-to-html/)** — Try the exported HTML in action.
 
-## Supported Views
 
-Currently, **Cards** and **Table** views are supported. Additional Bases views will be supported in future updates.
-
----
+<br>
 
 ## Key Features
 
@@ -21,8 +18,9 @@ Currently, **Cards** and **Table** views are supported. Additional Bases views w
 - 📄 **Note Detail Modals:** Click any card or row to view note properties and rendered Markdown content (configurable to Bases only, properties only, or full note).
 - 📦 **Flexible Export Formats:** Export as a single self-contained HTML file (with embedded scripts, styles, and images) or a structured multi-file folder for web hosting.
 - 🎨 **Customizable Appearance:** Supports dark/light themes, adjustable page widths, Google Fonts or local fonts, and custom CSS injection with clean semantic classes.
+- 📊 Supported Views: Cards and Table (more views coming in future updates).
 
----
+<br>
 
 ## Usage
 
@@ -31,7 +29,7 @@ Currently, **Cards** and **Table** views are supported. Additional Bases views w
 3. Configure your export preferences in the modal dialog.
 4. Click **Export HTML**.
 
----
+<br>
 
 ## Good to Know
 
@@ -39,7 +37,7 @@ Currently, **Cards** and **Table** views are supported. Additional Bases views w
 - **Saved Export Preferences (`data.json`):** Your last used export modal settings are automatically saved in the plugin's `data.json` file and can be reset anytime in **Settings → Bases to HTML**.
 - **Custom Summary Formulas:** Custom formulas in **Add summary** are exported as static, display-only values and will not recalculate when filters are changed in the exported page (a dedicated formula engine is not currently supported).
 
----
+<br>
 
 ## License
 
