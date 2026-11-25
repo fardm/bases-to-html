@@ -4,6 +4,9 @@ import { getClientCss } from './client-style';
 import { buildGoogleFontLink, getFontFamilyFromFileName } from './font-utils';
 import { getLucideSpriteSvg, renderIconSvg } from './icons';
 
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="15" fill="#2563EB"/><g transform="translate(32 32) scale(1.0) translate(-32 -32)" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="32" cy="17" rx="17" ry="7"/><path d="M15 17v30c0 3.9 7.6 7 17 7s17-3.1 17-7V17"/><path d="M15 32c0 3.9 7.6 7 17 7s17-3.1 17-7"/><path d="M15 45c0 3.9 7.6 7 17 7s17-3.1 17-7"/></g></svg>`;
+const FAVICON_LINK = `<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,${encodeURIComponent(FAVICON_SVG)}">`;
+
 export interface GeneratedFile {
   relativePath: string;
   content: string;
@@ -206,6 +209,7 @@ export class HtmlBuilder {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
+  ${FAVICON_LINK}
   ${fontLink}
   ${cssInclude}
   ${extraCssInclude}
@@ -429,6 +433,7 @@ export class HtmlBuilder {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
+  ${FAVICON_LINK}
   ${fontLink}
   ${cssInclude}
   <style>
