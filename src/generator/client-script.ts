@@ -1673,79 +1673,85 @@ export function getClientScript(): string {
 
     // Check if rule refers to a top-level summary formula
     var ruleStr = String(rule).trim();
+    var isCustomFormula = false;
     if (base.summaries && base.summaries[ruleStr]) {
       ruleStr = String(base.summaries[ruleStr]).trim();
+      isCustomFormula = true;
+    } else if (ruleStr.startsWith('values') || ruleStr.includes('values.') || findTopLevelBinaryOp(ruleStr, ['+'])) {
+      isCustomFormula = true;
     }
 
     var lowerRule = ruleStr.toLowerCase();
 
     // 1. Built-in obsidian summary functions
-    if (lowerRule === 'count') {
-      return { label: 'Count', value: itemsList.length };
-    }
-    if (lowerRule === 'filled') {
-      return { label: 'Filled', value: filledVals.length };
-    }
-    if (lowerRule === 'empty') {
-      return { label: 'Empty', value: itemsList.length - filledVals.length };
-    }
-    if (lowerRule === 'unique') {
-      var uniq = new Set(filledVals.map(function(x) { return Array.isArray(x) ? x.join(',') : String(x); }));
-      return { label: 'Unique', value: uniq.size };
-    }
-    if (lowerRule === 'checked') {
-      var checkedCount = boolVals.filter(function(b) { return b === true; }).length;
-      return { label: 'Checked', value: checkedCount };
-    }
-    if (lowerRule === 'unchecked') {
-      var uncheckedCount = boolVals.filter(function(b) { return b === false; }).length;
-      return { label: 'Unchecked', value: uncheckedCount };
-    }
-    if (lowerRule === 'sum') {
-      var s = numVals.reduce(function(acc, n) { return acc + n; }, 0);
-      return { label: 'Sum', value: Number.isInteger(s) ? s : Math.round(s * 100) / 100 };
-    }
-    if (lowerRule === 'average' || lowerRule === 'mean' || lowerRule === 'avg') {
-      if (numVals.length === 0) return { label: 'Average', value: '-' };
-      var sumVal = numVals.reduce(function(acc, n) { return acc + n; }, 0);
-      var avg = sumVal / numVals.length;
-      return { label: 'Average', value: Math.round(avg * 100) / 100 };
-    }
-    if (lowerRule === 'median') {
-      if (numVals.length === 0) return { label: 'Median', value: '-' };
-      var sorted = numVals.slice().sort(function(a, b) { return a - b; });
-      var mid = Math.floor(sorted.length / 2);
-      var med = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-      return { label: 'Median', value: Math.round(med * 100) / 100 };
-    }
-    if (lowerRule === 'min') {
-      if (numVals.length > 0) {
-        return { label: 'Min', value: Math.min.apply(null, numVals) };
+    if (!isCustomFormula) {
+      if (lowerRule === 'count') {
+        return { label: 'Count', value: itemsList.length };
       }
-      if (filledVals.length > 0) {
-        var sortedVals = filledVals.slice().sort();
-        return { label: 'Min', value: sortedVals[0] };
+      if (lowerRule === 'filled') {
+        return { label: 'Filled', value: filledVals.length };
       }
-      return { label: 'Min', value: '-' };
-    }
-    if (lowerRule === 'max') {
-      if (numVals.length > 0) {
-        return { label: 'Max', value: Math.max.apply(null, numVals) };
+      if (lowerRule === 'empty') {
+        return { label: 'Empty', value: itemsList.length - filledVals.length };
       }
-      if (filledVals.length > 0) {
-        var sortedVals = filledVals.slice().sort();
-        return { label: 'Max', value: sortedVals[sortedVals.length - 1] };
+      if (lowerRule === 'unique') {
+        var uniq = new Set(filledVals.map(function(x) { return Array.isArray(x) ? x.join(',') : String(x); }));
+        return { label: 'Unique', value: uniq.size };
       }
-      return { label: 'Max', value: '-' };
-    }
-    if (lowerRule === 'range') {
-      if (numVals.length > 0) {
-        var min = Math.min.apply(null, numVals);
-        var max = Math.max.apply(null, numVals);
-        var diff = max - min;
-        return { label: 'Range', value: Number.isInteger(diff) ? diff : Math.round(diff * 100) / 100 };
+      if (lowerRule === 'checked') {
+        var checkedCount = boolVals.filter(function(b) { return b === true; }).length;
+        return { label: 'Checked', value: checkedCount };
       }
-      return { label: 'Range', value: '-' };
+      if (lowerRule === 'unchecked') {
+        var uncheckedCount = boolVals.filter(function(b) { return b === false; }).length;
+        return { label: 'Unchecked', value: uncheckedCount };
+      }
+      if (lowerRule === 'sum') {
+        var s = numVals.reduce(function(acc, n) { return acc + n; }, 0);
+        return { label: 'Sum', value: Number.isInteger(s) ? s : Math.round(s * 100) / 100 };
+      }
+      if (lowerRule === 'average' || lowerRule === 'mean' || lowerRule === 'avg') {
+        if (numVals.length === 0) return { label: 'Average', value: '-' };
+        var sumVal = numVals.reduce(function(acc, n) { return acc + n; }, 0);
+        var avg = sumVal / numVals.length;
+        return { label: 'Average', value: Math.round(avg * 100) / 100 };
+      }
+      if (lowerRule === 'median') {
+        if (numVals.length === 0) return { label: 'Median', value: '-' };
+        var sorted = numVals.slice().sort(function(a, b) { return a - b; });
+        var mid = Math.floor(sorted.length / 2);
+        var med = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+        return { label: 'Median', value: Math.round(med * 100) / 100 };
+      }
+      if (lowerRule === 'min') {
+        if (numVals.length > 0) {
+          return { label: 'Min', value: Math.min.apply(null, numVals) };
+        }
+        if (filledVals.length > 0) {
+          var sortedVals = filledVals.slice().sort();
+          return { label: 'Min', value: sortedVals[0] };
+        }
+        return { label: 'Min', value: '-' };
+      }
+      if (lowerRule === 'max') {
+        if (numVals.length > 0) {
+          return { label: 'Max', value: Math.max.apply(null, numVals) };
+        }
+        if (filledVals.length > 0) {
+          var sortedValsMax = filledVals.slice().sort();
+          return { label: 'Max', value: sortedValsMax[sortedValsMax.length - 1] };
+        }
+        return { label: 'Max', value: '-' };
+      }
+      if (lowerRule === 'range') {
+        if (numVals.length > 0) {
+          var min = Math.min.apply(null, numVals);
+          var max = Math.max.apply(null, numVals);
+          var diff = max - min;
+          return { label: 'Range', value: Number.isInteger(diff) ? diff : Math.round(diff * 100) / 100 };
+        }
+        return { label: 'Range', value: '-' };
+      }
     }
 
     // 2. Custom formula evaluation
@@ -1759,9 +1765,44 @@ export function getClientScript(): string {
   }
 
   function evaluateCustomSummaryFormula(formula, rawVals) {
-    var calls = splitPipelineCalls(formula.trim());
+    var trimmed = formula.trim();
+
+    // 1. Check for top-level binary operations (specifically +)
+    var binaryMatch = findTopLevelBinaryOp(trimmed, ['+']);
+    if (binaryMatch) {
+      var leftVal = evaluateCustomSummaryFormula(binaryMatch.left, rawVals);
+      var rightVal = evaluateCustomSummaryFormula(binaryMatch.right, rawVals);
+      if (typeof leftVal === 'string' || typeof rightVal === 'string') {
+        return String(leftVal != null ? leftVal : '') + String(rightVal != null ? rightVal : '');
+      }
+      var numLeft = Number(leftVal);
+      var numRight = Number(rightVal);
+      if (!isNaN(numLeft) && !isNaN(numRight)) {
+        var sum = numLeft + numRight;
+        return Number.isInteger(sum) ? sum : Math.round(sum * 10000) / 10000;
+      }
+      return String(leftVal != null ? leftVal : '') + String(rightVal != null ? rightVal : '');
+    }
+
+    // 2. String literal
+    if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+      return trimmed.slice(1, -1);
+    }
+
+    // 3. Number literal
+    if (!isNaN(Number(trimmed)) && trimmed !== '') {
+      return Number(trimmed);
+    }
+
+    // 4. Boolean or null
+    if (trimmed === 'true') return true;
+    if (trimmed === 'false') return false;
+    if (trimmed === 'null' || trimmed === 'undefined') return '';
+
+    // 5. Pipeline starting with 'values'
+    var calls = splitPipelineCalls(trimmed);
     if (calls.length === 0 || calls[0] !== 'values') {
-      return '-';
+      return trimmed;
     }
 
     var current = rawVals.slice();
@@ -1775,63 +1816,116 @@ export function getClientScript(): string {
       var methodName = match[1];
       var argStr = match[2] !== undefined ? match[2] : '';
 
-      if (methodName === 'flat') {
-        var flattened = [];
-        for (var j = 0; j < current.length; j++) {
-          var item = current[j];
-          if (Array.isArray(item)) {
-            for (var k = 0; k < item.length; k++) {
-              if (item[k] !== null && item[k] !== undefined && item[k] !== '') flattened.push(item[k]);
+      if (Array.isArray(current)) {
+        if (methodName === 'flat') {
+          var flattened = [];
+          for (var j = 0; j < current.length; j++) {
+            var item = current[j];
+            if (Array.isArray(item)) {
+              for (var k = 0; k < item.length; k++) {
+                if (item[k] !== null && item[k] !== undefined && item[k] !== '') flattened.push(item[k]);
+              }
+            } else if (item !== null && item !== undefined && item !== '') {
+              flattened.push(item);
             }
-          } else if (item !== null && item !== undefined && item !== '') {
-            flattened.push(item);
           }
+          current = flattened;
+        } else if (methodName === 'unique') {
+          var seen = new Set();
+          current = current.filter(function(x) {
+            var s = String(x);
+            if (seen.has(s)) return false;
+            seen.add(s);
+            return true;
+          });
+        } else if (methodName === 'filter') {
+          var predExpr = argStr.trim();
+          current = current.filter(function(it) {
+            return Boolean(evaluateSummaryItemExpression(predExpr, it));
+          });
+        } else if (methodName === 'map') {
+          var mapExpr = argStr.trim();
+          current = current
+            .map(function(it) { return evaluateSummaryItemExpression(mapExpr, it); })
+            .filter(function(x) { return x !== null && x !== undefined && x !== ''; });
+        } else if (methodName === 'count') {
+          current = current.length;
+        } else if (methodName === 'sum') {
+          var sumNums = current.map(Number).filter(function(n) { return !isNaN(n); });
+          var s = sumNums.reduce(function(a, b) { return a + b; }, 0);
+          current = Number.isInteger(s) ? s : Math.round(s * 10000) / 10000;
+        } else if (methodName === 'mean' || methodName === 'avg' || methodName === 'average') {
+          var meanNums = current.map(Number).filter(function(n) { return !isNaN(n); });
+          if (meanNums.length === 0) {
+            current = 0;
+          } else {
+            var avg = meanNums.reduce(function(a, b) { return a + b; }, 0) / meanNums.length;
+            current = Math.round(avg * 100) / 100;
+          }
+        } else if (methodName === 'median') {
+          var medNums = current.map(Number).filter(function(n) { return !isNaN(n); }).sort(function(a, b) { return a - b; });
+          if (medNums.length === 0) {
+            current = 0;
+          } else {
+            var mid = Math.floor(medNums.length / 2);
+            current = medNums.length % 2 !== 0 ? (medNums[mid] || 0) : (((medNums[mid - 1] || 0) + (medNums[mid] || 0)) / 2);
+          }
+        } else if (methodName === 'min') {
+          var minNums = current.map(Number).filter(function(n) { return !isNaN(n); });
+          current = minNums.length > 0 ? Math.min.apply(null, minNums) : 0;
+        } else if (methodName === 'max') {
+          var maxNums = current.map(Number).filter(function(n) { return !isNaN(n); });
+          current = maxNums.length > 0 ? Math.max.apply(null, maxNums) : 0;
+        } else if (methodName === 'join') {
+          var sep = argStr.replace(/^["']/, '').replace(/["']$/, '') || ', ';
+          current = current.map(function(x) { return String(x != null ? x : ''); }).join(sep);
         }
-        current = flattened;
-      } else if (methodName === 'unique') {
-        var seen = new Set();
-        current = current.filter(function(x) {
-          var s = String(x);
-          if (seen.has(s)) return false;
-          seen.add(s);
-          return true;
-        });
-      } else if (methodName === 'filter') {
-        var predExpr = argStr.trim();
-        current = current.filter(function(it) {
-          return Boolean(evaluateSummaryItemExpression(predExpr, it));
-        });
-      } else if (methodName === 'map') {
-        var mapExpr = argStr.trim();
-        current = current.map(function(it) {
-          return evaluateSummaryItemExpression(mapExpr, it);
-        }).filter(function(x) {
-          return x !== null && x !== undefined && x !== '';
-        });
-      } else if (methodName === 'count') {
-        return current.length;
-      } else if (methodName === 'sum') {
-        var sumVal = current.map(Number).filter(function(n) { return !isNaN(n); }).reduce(function(a, b) { return a + b; }, 0);
-        return Number.isInteger(sumVal) ? sumVal : Math.round(sumVal * 100) / 100;
-      } else if (methodName === 'mean' || methodName === 'avg') {
-        var nums = current.map(Number).filter(function(n) { return !isNaN(n); });
-        if (nums.length === 0) return 0;
-        var avgVal = nums.reduce(function(a, b) { return a + b; }, 0) / nums.length;
-        return Math.round(avgVal * 100) / 100;
-      } else if (methodName === 'min') {
-        var minNums = current.map(Number).filter(function(n) { return !isNaN(n); });
-        return minNums.length > 0 ? Math.min.apply(null, minNums) : 0;
-      } else if (methodName === 'max') {
-        var maxNums = current.map(Number).filter(function(n) { return !isNaN(n); });
-        return maxNums.length > 0 ? Math.max.apply(null, maxNums) : 0;
-      } else if (methodName === 'join') {
-        var sep = argStr.replace(/^["']/, '').replace(/["']$/, '') || ', ';
-        return current.join(sep);
+      } else if (typeof current === 'number') {
+        if (methodName === 'round') {
+          var decimals = argStr.trim() ? parseInt(argStr.trim(), 10) : 0;
+          var factor = Math.pow(10, isNaN(decimals) ? 0 : decimals);
+          current = Math.round(current * factor) / factor;
+        } else if (methodName === 'toFixed') {
+          var fixDecimals = argStr.trim() ? parseInt(argStr.trim(), 10) : 0;
+          current = current.toFixed(isNaN(fixDecimals) ? 0 : fixDecimals);
+        } else if (methodName === 'floor') {
+          current = Math.floor(current);
+        } else if (methodName === 'ceil') {
+          current = Math.ceil(current);
+        } else if (methodName === 'abs') {
+          current = Math.abs(current);
+        } else if (methodName === 'toString') {
+          current = String(current);
+        }
+      } else if (typeof current === 'string') {
+        if (methodName === 'replace') {
+          var repArgs = splitTopLevelCommas(argStr);
+          var pattern = (repArgs[0] || '').trim();
+          var replacement = (repArgs[1] || '').trim().replace(/^["']/, '').replace(/["']$/, '');
+          var regMatch = pattern.match(/^\\/(.*)\\/([gimsuy]*)$/);
+          if (regMatch) {
+            try {
+              var reg = new RegExp(regMatch[1] || '', regMatch[2]);
+              current = current.replace(reg, replacement);
+            } catch (e) {
+              // ignore
+            }
+          } else {
+            pattern = pattern.replace(/^["']/, '').replace(/["']$/, '');
+            current = current.replace(pattern, replacement);
+          }
+        } else if (methodName === 'toLowerCase') {
+          current = current.toLowerCase();
+        } else if (methodName === 'toUpperCase') {
+          current = current.toUpperCase();
+        } else if (methodName === 'trim') {
+          current = current.trim();
+        }
       }
     }
 
     if (Array.isArray(current)) {
-      return current.join(' ');
+      return current.map(function(x) { return String(x != null ? x : ''); }).join(' ');
     }
     if (typeof current === 'number' || typeof current === 'boolean') {
       return current;
@@ -1967,6 +2061,48 @@ export function getClientScript(): string {
     }
     if (current.trim()) calls.push(current.trim());
     return calls;
+  }
+
+  function findTopLevelBinaryOp(expr, ops) {
+    var depth = 0;
+    var inQuote = null;
+    var lastMatch = null;
+
+    for (var i = 0; i < expr.length; i++) {
+      var char = expr[i];
+      if (inQuote) {
+        if (char === inQuote && expr[i - 1] !== '\\\\') {
+          inQuote = null;
+        }
+        continue;
+      }
+      if (char === '"' || char === "'") {
+        inQuote = char;
+        continue;
+      }
+      if (char === '(' || char === '[' || char === '{') {
+        depth++;
+        continue;
+      }
+      if (char === ')' || char === ']' || char === '}') {
+        depth--;
+        continue;
+      }
+      if (depth === 0) {
+        for (var j = 0; j < ops.length; j++) {
+          var op = ops[j];
+          if (expr.slice(i, i + op.length) === op) {
+            lastMatch = {
+              index: i,
+              left: expr.slice(0, i).trim(),
+              op: op,
+              right: expr.slice(i + op.length).trim()
+            };
+          }
+        }
+      }
+    }
+    return lastMatch;
   }
 
   function getColumnWidth(col, colSizes) {

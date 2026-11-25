@@ -79,8 +79,8 @@ export function evaluateSummaryRule(
 		}
 	}
 
-	// 2. Check if rule is directly a pipeline formula starting with 'values'
-	if (ruleStr.startsWith('values')) {
+	// 2. Check if rule is directly a pipeline formula starting with 'values' or has concatenation '+'
+	if (ruleStr.startsWith('values') || ruleStr.includes('values.') || findTopLevelBinaryOp(ruleStr, ['+'])) {
 		try {
 			const val = evaluateCustomSummaryFormula(ruleStr, rawVals);
 			return { label: '', value: val };
@@ -199,12 +199,47 @@ export function evaluateSummaryRule(
 }
 
 export function evaluateCustomSummaryFormula(formula: string, rawVals: unknown[]): string | number | boolean {
-	const calls = splitPipelineCalls(formula.trim());
-	if (calls.length === 0 || calls[0] !== 'values') {
-		return '-';
+	const trimmed = formula.trim();
+
+	// 1. Check for top-level binary operations (specifically +)
+	const binaryMatch = findTopLevelBinaryOp(trimmed, ['+']);
+	if (binaryMatch) {
+		const leftVal = evaluateCustomSummaryFormula(binaryMatch.left, rawVals);
+		const rightVal = evaluateCustomSummaryFormula(binaryMatch.right, rawVals);
+		if (typeof leftVal === 'string' || typeof rightVal === 'string') {
+			return toSafeString(leftVal) + toSafeString(rightVal);
+		}
+		const numLeft = Number(leftVal);
+		const numRight = Number(rightVal);
+		if (!isNaN(numLeft) && !isNaN(numRight)) {
+			const sum = numLeft + numRight;
+			return Number.isInteger(sum) ? sum : Math.round(sum * 10000) / 10000;
+		}
+		return toSafeString(leftVal) + toSafeString(rightVal);
 	}
 
-	let current: unknown[] = rawVals.slice();
+	// 2. String literal
+	if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+		return trimmed.slice(1, -1);
+	}
+
+	// 3. Number literal
+	if (!isNaN(Number(trimmed)) && trimmed !== '') {
+		return Number(trimmed);
+	}
+
+	// 4. Boolean or null
+	if (trimmed === 'true') return true;
+	if (trimmed === 'false') return false;
+	if (trimmed === 'null' || trimmed === 'undefined') return '';
+
+	// 5. Pipeline starting with 'values'
+	const calls = splitPipelineCalls(trimmed);
+	if (calls.length === 0 || calls[0] !== 'values') {
+		return trimmed;
+	}
+
+	let current: unknown = rawVals.slice();
 
 	for (let i = 1; i < calls.length; i++) {
 		const callStr = calls[i];
@@ -215,59 +250,111 @@ export function evaluateCustomSummaryFormula(formula: string, rawVals: unknown[]
 		const methodName = match[1];
 		const argStr = match[2] !== undefined ? match[2] : '';
 
-		if (methodName === 'flat') {
-			const flattened: unknown[] = [];
-			for (const item of current) {
-				if (Array.isArray(item)) {
-					for (const sub of item) {
-						if (sub !== null && sub !== undefined && sub !== '') flattened.push(sub);
+		if (Array.isArray(current)) {
+			if (methodName === 'flat') {
+				const flattened: unknown[] = [];
+				for (const item of current) {
+					if (Array.isArray(item)) {
+						for (const sub of item) {
+							if (sub !== null && sub !== undefined && sub !== '') flattened.push(sub);
+						}
+					} else if (item !== null && item !== undefined && item !== '') {
+						flattened.push(item);
 					}
-				} else if (item !== null && item !== undefined && item !== '') {
-					flattened.push(item);
 				}
+				current = flattened;
+			} else if (methodName === 'unique') {
+				const seen = new Set<string>();
+				current = current.filter((x) => {
+					const s = toSafeString(x);
+					if (seen.has(s)) return false;
+					seen.add(s);
+					return true;
+				});
+			} else if (methodName === 'filter') {
+				const predExpr = argStr.trim();
+				current = current.filter((item) => {
+					const res = evaluateSummaryItemExpression(predExpr, item);
+					return Boolean(res);
+				});
+			} else if (methodName === 'map') {
+				const mapExpr = argStr.trim();
+				current = current
+					.map((item) => evaluateSummaryItemExpression(mapExpr, item))
+					.filter((x) => x !== null && x !== undefined && x !== '');
+			} else if (methodName === 'count') {
+				current = current.length;
+			} else if (methodName === 'sum') {
+				const nums = current.map(Number).filter((n) => !isNaN(n));
+				const s = nums.reduce((a, b) => a + b, 0);
+				current = Number.isInteger(s) ? s : Math.round(s * 10000) / 10000;
+			} else if (methodName === 'mean' || methodName === 'avg' || methodName === 'average') {
+				const nums = current.map(Number).filter((n) => !isNaN(n));
+				if (nums.length === 0) {
+					current = 0;
+				} else {
+					const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
+					current = Math.round(avg * 100) / 100;
+				}
+			} else if (methodName === 'median') {
+				const nums = current.map(Number).filter((n) => !isNaN(n)).sort((a, b) => a - b);
+				if (nums.length === 0) {
+					current = 0;
+				} else {
+					const mid = Math.floor(nums.length / 2);
+					current = nums.length % 2 !== 0 ? (nums[mid] ?? 0) : (((nums[mid - 1] ?? 0) + (nums[mid] ?? 0)) / 2);
+				}
+			} else if (methodName === 'min') {
+				const nums = current.map(Number).filter((n) => !isNaN(n));
+				current = nums.length > 0 ? Math.min(...nums) : 0;
+			} else if (methodName === 'max') {
+				const nums = current.map(Number).filter((n) => !isNaN(n));
+				current = nums.length > 0 ? Math.max(...nums) : 0;
+			} else if (methodName === 'join') {
+				const sep = argStr.replace(/^["']/, '').replace(/["']$/, '') || ', ';
+				current = current.map(toSafeString).join(sep);
 			}
-			current = flattened;
-		} else if (methodName === 'unique') {
-			const seen = new Set<string>();
-			current = current.filter((x) => {
-				const s = toSafeString(x);
-				if (seen.has(s)) return false;
-				seen.add(s);
-				return true;
-			});
-		} else if (methodName === 'filter') {
-			const predExpr = argStr.trim();
-			current = current.filter((item) => {
-				const res = evaluateSummaryItemExpression(predExpr, item);
-				return Boolean(res);
-			});
-		} else if (methodName === 'map') {
-			const mapExpr = argStr.trim();
-			current = current
-				.map((item) => evaluateSummaryItemExpression(mapExpr, item))
-				.filter((x) => x !== null && x !== undefined && x !== '');
-		} else if (methodName === 'count') {
-			return current.length;
-		} else if (methodName === 'sum') {
-			const s = current
-				.map(Number)
-				.filter((n) => !isNaN(n))
-				.reduce((a, b) => a + b, 0);
-			return Number.isInteger(s) ? s : Math.round(s * 100) / 100;
-		} else if (methodName === 'mean' || methodName === 'avg') {
-			const nums = current.map(Number).filter((n) => !isNaN(n));
-			if (nums.length === 0) return 0;
-			const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
-			return Math.round(avg * 100) / 100;
-		} else if (methodName === 'min') {
-			const nums = current.map(Number).filter((n) => !isNaN(n));
-			return nums.length > 0 ? Math.min(...nums) : 0;
-		} else if (methodName === 'max') {
-			const nums = current.map(Number).filter((n) => !isNaN(n));
-			return nums.length > 0 ? Math.max(...nums) : 0;
-		} else if (methodName === 'join') {
-			const sep = argStr.replace(/^["']/, '').replace(/["']$/, '') || ', ';
-			return current.map(toSafeString).join(sep);
+		} else if (typeof current === 'number') {
+			if (methodName === 'round') {
+				const decimals = argStr.trim() ? parseInt(argStr.trim(), 10) : 0;
+				const factor = Math.pow(10, isNaN(decimals) ? 0 : decimals);
+				current = Math.round(current * factor) / factor;
+			} else if (methodName === 'toFixed') {
+				const decimals = argStr.trim() ? parseInt(argStr.trim(), 10) : 0;
+				current = current.toFixed(isNaN(decimals) ? 0 : decimals);
+			} else if (methodName === 'floor') {
+				current = Math.floor(current);
+			} else if (methodName === 'ceil') {
+				current = Math.ceil(current);
+			} else if (methodName === 'abs') {
+				current = Math.abs(current);
+			} else if (methodName === 'toString') {
+				current = String(current);
+			}
+		} else if (typeof current === 'string') {
+			if (methodName === 'replace') {
+				const args = splitTopLevelCommas(argStr);
+				let pattern = (args[0] || '').trim();
+				const replacement = (args[1] || '').trim().replace(/^["']/, '').replace(/["']$/, '');
+				const regexMatch = pattern.match(/^\/(.*)\/([gimsuy]*)$/);
+				if (regexMatch) {
+					try {
+						const reg = new RegExp(regexMatch[1] || '', regexMatch[2]);
+						current = current.replace(reg, replacement);
+					} catch {
+						// ignore
+					}
+				} else {
+					pattern = pattern.replace(/^["']/, '').replace(/["']$/, '');
+					current = current.replace(pattern, replacement);
+				}
+			} else if (methodName === 'toLowerCase') {
+				current = current.toLowerCase();
+			} else if (methodName === 'toUpperCase') {
+				current = current.toUpperCase();
+			} else if (methodName === 'trim') {
+				current = current.trim();
+			}
 		}
 	}
 
@@ -504,6 +591,50 @@ function findTopLevelComparison(expr: string): { left: string; op: string; right
 		}
 	}
 	return null;
+}
+
+export function findTopLevelBinaryOp(
+	expr: string,
+	ops: string[],
+): { index: number; left: string; op: string; right: string } | null {
+	let depth = 0;
+	let inQuote: string | null = null;
+	let lastMatch: { index: number; left: string; op: string; right: string } | null = null;
+
+	for (let i = 0; i < expr.length; i++) {
+		const char = expr[i];
+		if (inQuote) {
+			if (char === inQuote && expr[i - 1] !== '\\') {
+				inQuote = null;
+			}
+			continue;
+		}
+		if (char === '"' || char === "'") {
+			inQuote = char;
+			continue;
+		}
+		if (char === '(' || char === '[' || char === '{') {
+			depth++;
+			continue;
+		}
+		if (char === ')' || char === ']' || char === '}') {
+			depth--;
+			continue;
+		}
+		if (depth === 0) {
+			for (const op of ops) {
+				if (expr.slice(i, i + op.length) === op) {
+					lastMatch = {
+						index: i,
+						left: expr.slice(0, i).trim(),
+						op,
+						right: expr.slice(i + op.length).trim(),
+					};
+				}
+			}
+		}
+	}
+	return lastMatch;
 }
 
 export function computeViewSummaries(
