@@ -511,6 +511,64 @@ body {
   color: var(--text-primary);
 }
 
+.popover-add-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filter-group-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.filter-group-nested {
+  border-left: 2px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.55rem;
+  margin-left: 0.5rem;
+}
+
+.filter-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.filter-group-conjunction-select {
+  background-color: var(--bg-pill);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0.15rem 0.4rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.filter-group-conjunction-select option {
+  background-color: var(--bg-popover);
+  color: var(--text-primary);
+}
+
+.filter-group-children {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.filter-expression-pill {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding: 0.3rem 0.55rem;
+}
+
 /* Properties Popover Item */
 .property-visibility-row {
   display: flex;

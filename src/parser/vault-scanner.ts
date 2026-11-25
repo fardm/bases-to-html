@@ -93,11 +93,18 @@ export class VaultScanner {
 				if (!rawTags.includes(t)) rawTags.push(t);
 			}
 
+			const links = (cache?.links || []).map((l) => l.link);
+
 			const context: EvaluationContext = {
 				file: {
 					name: file.basename,
 					path: file.path,
 					folder: file.parent ? file.parent.path : '',
+					ext: file.extension,
+					ctime: file.stat?.ctime,
+					mtime: file.stat?.mtime,
+					size: file.stat?.size,
+					links,
 					tags: rawTags,
 				},
 				properties: frontmatter,
@@ -107,6 +114,9 @@ export class VaultScanner {
 
 			// When exportedData is 'filtered', exclude notes that do not match current view filters
 			if (exportedData === 'filtered') {
+				const basePasses = !baseConfig.filters || evaluateFilter(baseConfig.filters, context);
+				if (!basePasses) continue;
+
 				let matchesAnyView = false;
 				for (const view of baseConfig.views) {
 					if (!view.filters) {
@@ -177,6 +187,11 @@ export class VaultScanner {
 				title: file.basename,
 				path: file.path,
 				folder: file.parent ? file.parent.path : '',
+				ext: file.extension,
+				ctime: file.stat?.ctime,
+				mtime: file.stat?.mtime,
+				size: file.stat?.size,
+				links,
 				tags: rawTags,
 				properties: frontmatter,
 				computedFormulas,
@@ -194,6 +209,13 @@ export class VaultScanner {
 		const propertyTypes: Record<string, PropertyMetadata> = {
 			file: { id: 'file', name: 'file', type: 'text', icon: 'file-text' },
 			'file.name': { id: 'file.name', name: 'file.name', type: 'text', icon: 'file-text' },
+			'file.path': { id: 'file.path', name: 'file.path', type: 'text', icon: 'file-text' },
+			'file.folder': { id: 'file.folder', name: 'file.folder', type: 'text', icon: 'folder' },
+			'file.ext': { id: 'file.ext', name: 'file.ext', type: 'text', icon: 'file-text' },
+			'file.ctime': { id: 'file.ctime', name: 'file.ctime', type: 'date', icon: 'calendar' },
+			'file.mtime': { id: 'file.mtime', name: 'file.mtime', type: 'date', icon: 'calendar' },
+			'file.size': { id: 'file.size', name: 'file.size', type: 'number', icon: 'hash' },
+			'file.links': { id: 'file.links', name: 'file.links', type: 'list', icon: 'link' },
 			'file.tags': { id: 'file.tags', name: 'file.tags', type: 'list', icon: 'tag' },
 			tags: { id: 'tags', name: 'tags', type: 'list', icon: 'tag' },
 		};

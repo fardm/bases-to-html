@@ -3,6 +3,11 @@ export interface EvaluationContext {
 		name: string;
 		path: string;
 		folder: string;
+		ext?: string;
+		ctime?: number;
+		mtime?: number;
+		size?: number;
+		links?: string[];
 		tags: string[];
 	};
 	properties: Record<string, unknown>;
@@ -63,16 +68,38 @@ export function resolvePropertyPath(
 	path: string,
 	context: EvaluationContext,
 ): unknown {
-	const cleanPath = path.trim();
+	let cleanPath = path.trim();
 
-	if (cleanPath === 'file.name' || cleanPath === 'name') {
+	// Handle bracket notation: note["Prop Name"] or note['Prop Name'] or ["Prop Name"]
+	const bracketMatch = cleanPath.match(/^(?:note)?\[(["'])(.*?)\1\]$/);
+	if (bracketMatch && bracketMatch[2] !== undefined) {
+		cleanPath = bracketMatch[2];
+		return context.properties[cleanPath];
+	}
+
+	if (cleanPath === 'file.name' || cleanPath === 'name' || cleanPath === 'file') {
 		return context.file.name;
 	}
 	if (cleanPath === 'file.path') {
 		return context.file.path;
 	}
-	if (cleanPath === 'file.folder') {
+	if (cleanPath === 'file.folder' || cleanPath === 'folder') {
 		return context.file.folder;
+	}
+	if (cleanPath === 'file.ext') {
+		return context.file.ext ?? 'md';
+	}
+	if (cleanPath === 'file.ctime') {
+		return context.file.ctime;
+	}
+	if (cleanPath === 'file.mtime') {
+		return context.file.mtime;
+	}
+	if (cleanPath === 'file.size') {
+		return context.file.size;
+	}
+	if (cleanPath === 'file.links') {
+		return context.file.links ?? [];
 	}
 	if (cleanPath === 'file.tags' || cleanPath === 'file.tag') {
 		return context.file.tags;
@@ -123,11 +150,29 @@ function evaluateBooleanExpression(
 	rawExpr: string,
 	context: EvaluationContext,
 ): boolean {
-	const expr = rawExpr.trim();
+	let expr = rawExpr.trim();
+	if (!expr) return true;
+
+	// Strip matching outer parentheses
+	while (expr.startsWith('(') && expr.endsWith(')') && isMatchingOuterParen(expr)) {
+		expr = expr.slice(1, -1).trim();
+	}
+
+	// Top-level || and &&
+	const orParts = splitTopLevelLogical(expr, '||');
+	if (orParts.length > 1) {
+		return orParts.some((p) => evaluateBooleanExpression(p, context));
+	}
+	const andParts = splitTopLevelLogical(expr, '&&');
+	if (andParts.length > 1) {
+		return andParts.every((p) => evaluateBooleanExpression(p, context));
+	}
+
 	if (expr.startsWith('!')) {
 		return !evaluateBooleanExpression(expr.slice(1), context);
 	}
 	const val = evaluateExpression(expr, context);
+	if (Array.isArray(val)) return val.length > 0;
 	return Boolean(val);
 }
 
@@ -177,30 +222,100 @@ export function evaluateExpression(
 		}
 	}
 
-	// Handle method calls: file.hasTag("tag"), type.contains("film")
-	const methodMatch = expr.match(/^([\w.-]+)\.(\w+)\((.*)\)$/);
+	// Handle date/time helper functions: today(), now(), date("...")
+	if (expr === 'today()') {
+		return new Date().toISOString().slice(0, 10);
+	}
+	if (expr === 'now()') {
+		return Date.now();
+	}
+	const dateCallMatch = expr.match(/^date\((.*)\)$/);
+	if (dateCallMatch && dateCallMatch[1] !== undefined) {
+		const arg = toSafeString(evaluateExpression(dateCallMatch[1], context)).trim();
+		return arg;
+	}
+
+	// Handle method calls: file.hasTag("tag"), note["Prop"].contains("val"), type.startsWith("a")
+	const methodMatch = expr.match(/^((?:note)?\[["'].*?["']\]|[\w.-]+)\.(\w+)\((.*)\)$/);
 	if (methodMatch) {
 		const targetName = methodMatch[1];
 		const methodName = methodMatch[2];
 		const argsStr = methodMatch[3];
 		if (targetName && methodName && argsStr !== undefined) {
-			const args = splitTopLevelCommas(argsStr).map((a) =>
-				evaluateExpression(a, context),
-			);
+			const args = argsStr.trim()
+				? splitTopLevelCommas(argsStr).map((a) => evaluateExpression(a, context))
+				: [];
 
 			if (
 				(targetName === 'file' && methodName === 'hasTag') ||
 				((targetName === 'file' || targetName === 'file.tags' || targetName === 'file.tag') &&
 					(methodName === 'contains' || methodName === 'hasTag'))
 			) {
-				const tagToFind = toSafeString(args[0]).replace(/^#/, '').toLowerCase();
-				return context.file.tags.some((t) => {
-					const cleanT = t.replace(/^#/, '').toLowerCase();
-					return cleanT === tagToFind || cleanT.includes(tagToFind);
-				});
+				const tagsToFind = args.map((a) => toSafeString(a).replace(/^#/, '').toLowerCase()).filter(Boolean);
+				return tagsToFind.some((tagToFind) =>
+					context.file.tags.some((t) => {
+						const cleanT = t.replace(/^#/, '').toLowerCase();
+						return cleanT === tagToFind || cleanT.startsWith(tagToFind + '/') || cleanT.includes(tagToFind);
+					}),
+				);
+			}
+
+			if (targetName === 'file' && methodName === 'inFolder') {
+				const folderArg = toSafeString(args[0]).replace(/^\/+|\/+$/g, '').toLowerCase();
+				const fileFolder = (context.file.folder || '').replace(/^\/+|\/+$/g, '').toLowerCase();
+				if (!folderArg) return fileFolder === '';
+				return fileFolder === folderArg || fileFolder.startsWith(folderArg + '/');
+			}
+
+			if (targetName === 'file' && methodName === 'hasLink') {
+				const linkArg = toSafeString(args[0]).replace(/^\[\[|\]\]$/g, '').split('|')[0]?.trim().toLowerCase() || '';
+				const links = context.file.links ?? [];
+				return links.some((l) => l.toLowerCase() === linkArg || l.toLowerCase().endsWith('/' + linkArg));
+			}
+
+			if (targetName === 'file' && methodName === 'hasProperty') {
+				const propArg = toSafeString(args[0]).trim();
+				return propArg in context.properties && context.properties[propArg] !== undefined && context.properties[propArg] !== null;
 			}
 
 			const targetVal = resolvePropertyPath(targetName, context);
+
+			if (methodName === 'isEmpty') {
+				if (targetVal === undefined || targetVal === null || targetVal === '') return true;
+				if (Array.isArray(targetVal)) return targetVal.length === 0;
+				return false;
+			}
+
+			if (methodName === 'startsWith') {
+				const prefix = toSafeString(args[0]).toLowerCase();
+				return toSafeString(targetVal).toLowerCase().startsWith(prefix);
+			}
+
+			if (methodName === 'endsWith') {
+				const suffix = toSafeString(args[0]).toLowerCase();
+				return toSafeString(targetVal).toLowerCase().endsWith(suffix);
+			}
+
+			if (methodName === 'matches') {
+				const pattern = toSafeString(args[0]);
+				try {
+					return new RegExp(pattern, 'i').test(toSafeString(targetVal));
+				} catch {
+					return false;
+				}
+			}
+
+			if (methodName === 'containsAny' || methodName === 'containsAll') {
+				const searchItems = args.map((a) => toSafeString(a).toLowerCase().replace(/^#/, ''));
+				const list = Array.isArray(targetVal)
+					? targetVal.map((x) => toSafeString(x).toLowerCase().replace(/^#/, ''))
+					: [toSafeString(targetVal).toLowerCase().replace(/^#/, '')];
+				if (methodName === 'containsAny') {
+					return searchItems.some((s) => list.some((item) => item === s || item.includes(s)));
+				}
+				return searchItems.every((s) => list.some((item) => item === s || item.includes(s)));
+			}
+
 			if (methodName === 'contains' || methodName === 'hasTag') {
 				const rawSearch = toSafeString(args[0]).toLowerCase();
 				const cleanSearch = rawSearch.replace(/^#/, '');
@@ -329,6 +444,56 @@ function findTopLevelComparison(expr: string): { left: string; op: string; right
 	return null;
 }
 
+function isMatchingOuterParen(expr: string): boolean {
+	if (!expr.startsWith('(') || !expr.endsWith(')')) return false;
+	let depth = 0;
+	let inQuote: string | null = null;
+	for (let i = 0; i < expr.length; i++) {
+		const c = expr[i];
+		if (inQuote) {
+			if (c === inQuote && expr[i - 1] !== '\\') inQuote = null;
+			continue;
+		}
+		if (c === '"' || c === "'") {
+			inQuote = c;
+		} else if (c === '(') {
+			depth++;
+		} else if (c === ')') {
+			depth--;
+			if (depth === 0 && i < expr.length - 1) return false;
+		}
+	}
+	return depth === 0;
+}
+
+function splitTopLevelLogical(expr: string, op: '&&' | '||'): string[] {
+	const parts: string[] = [];
+	let depth = 0;
+	let inQuote: string | null = null;
+	let start = 0;
+
+	for (let i = 0; i < expr.length; i++) {
+		const c = expr[i];
+		if (inQuote) {
+			if (c === inQuote && expr[i - 1] !== '\\') inQuote = null;
+			continue;
+		}
+		if (c === '"' || c === "'") {
+			inQuote = c;
+		} else if (c === '(' || c === '[' || c === '{') {
+			depth++;
+		} else if (c === ')' || c === ']' || c === '}') {
+			depth--;
+		} else if (depth === 0 && expr.slice(i, i + op.length) === op) {
+			parts.push(expr.slice(start, i).trim());
+			start = i + op.length;
+			i += op.length - 1;
+		}
+	}
+	parts.push(expr.slice(start).trim());
+	return parts.filter(Boolean);
+}
+
 function compareValues(a: unknown, b: unknown): number {
 	if (a === b) return 0;
 	if (a === null || a === undefined) return -1;
@@ -337,10 +502,28 @@ function compareValues(a: unknown, b: unknown): number {
 	// Number comparison
 	const numA = Number(a);
 	const numB = Number(b);
-	if (!isNaN(numA) && !isNaN(numB) && typeof a !== 'boolean' && typeof b !== 'boolean') {
+	const strA = toSafeString(a).trim();
+	const strB = toSafeString(b).trim();
+	if (
+		!isNaN(numA) &&
+		!isNaN(numB) &&
+		typeof a !== 'boolean' &&
+		typeof b !== 'boolean' &&
+		strA !== '' &&
+		strB !== ''
+	) {
 		return numA - numB;
 	}
 
+	// Date comparison (YYYY-MM-DD...)
+	if (/^\d{4}-\d{2}-\d{2}/.test(strA) && /^\d{4}-\d{2}-\d{2}/.test(strB)) {
+		const tA = Date.parse(strA);
+		const tB = Date.parse(strB);
+		if (!isNaN(tA) && !isNaN(tB)) {
+			return tA - tB;
+		}
+	}
+
 	// String comparison
-	return toSafeString(a).localeCompare(toSafeString(b));
+	return strA.localeCompare(strB);
 }

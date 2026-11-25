@@ -34,7 +34,7 @@ export function getClientScript(): string {
   }
 
   var searchQuery = '';
-  var activeFilterRules = [];
+  var activeFilterTree = { type: 'group', conjunction: 'and', children: [] };
   var activeSortRules = [];
   var activeGroupRule = null;
   var activeOrder = [];
@@ -42,13 +42,19 @@ export function getClientScript(): string {
   // Property types dictionary from export
   var propertyTypes = base.propertyTypes || {};
 
-  // Standard operators by type
+  // Standard operators by type (aligned with Obsidian Bases UI)
   var OPERATORS_BY_TYPE = {
     text: [
+      { id: 'is', label: 'is' },
+      { id: 'is_not', label: 'is not' },
       { id: 'contains', label: 'contains' },
       { id: 'does_not_contain', label: 'does not contain' },
-      { id: 'is', label: 'is exactly' },
-      { id: 'is_not', label: 'is not exactly' },
+      { id: 'starts_with', label: 'starts with' },
+      { id: 'does_not_start_with', label: 'does not start with' },
+      { id: 'ends_with', label: 'ends with' },
+      { id: 'does_not_end_with', label: 'does not end with' },
+      { id: 'matches', label: 'matches regex' },
+      { id: 'does_not_match', label: 'does not match regex' },
       { id: 'is_empty', label: 'is empty', noValue: true },
       { id: 'is_not_empty', label: 'is not empty', noValue: true }
     ],
@@ -64,6 +70,7 @@ export function getClientScript(): string {
     ],
     date: [
       { id: 'is', label: 'is' },
+      { id: 'is_not', label: 'is not' },
       { id: 'is_before', label: 'is before' },
       { id: 'is_after', label: 'is after' },
       { id: 'is_on_or_before', label: 'is on or before' },
@@ -73,15 +80,20 @@ export function getClientScript(): string {
     ],
     checkbox: [
       { id: 'is_checked', label: 'is checked', noValue: true },
-      { id: 'is_not_checked', label: 'is not checked', noValue: true }
+      { id: 'is_not_checked', label: 'is not checked', noValue: true },
+      { id: 'is_empty', label: 'is empty', noValue: true },
+      { id: 'is_not_empty', label: 'is not empty', noValue: true }
     ],
     list: [
       { id: 'contains', label: 'contains' },
-      { id: 'has_tag', label: 'has tag' },
+      { id: 'does_not_contain', label: 'does not contain' },
       { id: 'contains_any', label: 'contains any of' },
       { id: 'contains_all', label: 'contains all of' },
-      { id: 'does_not_contain', label: 'does not contain' },
       { id: 'does_not_contain_any', label: 'does not contain any of' },
+      { id: 'does_not_contain_all', label: 'does not contain all of' },
+      { id: 'has_tag', label: 'has tag' },
+      { id: 'is', label: 'is' },
+      { id: 'is_not', label: 'is not' },
       { id: 'is_empty', label: 'is empty', noValue: true },
       { id: 'is_not_empty', label: 'is not empty', noValue: true }
     ],
@@ -89,6 +101,9 @@ export function getClientScript(): string {
       { id: 'is', label: 'is' },
       { id: 'is_not', label: 'is not' },
       { id: 'contains', label: 'contains' },
+      { id: 'does_not_contain', label: 'does not contain' },
+      { id: 'starts_with', label: 'starts with' },
+      { id: 'ends_with', label: 'ends with' },
       { id: 'is_empty', label: 'is empty', noValue: true },
       { id: 'is_not_empty', label: 'is not empty', noValue: true }
     ]
@@ -127,6 +142,7 @@ export function getClientScript(): string {
   var filterPopover = document.getElementById('filterPopover');
   var filterRulesList = document.getElementById('filterRulesList');
   var addFilterBtn = document.getElementById('addFilterBtn');
+  var addFilterGroupBtn = document.getElementById('addFilterGroupBtn');
   var filterCountBadge = document.getElementById('filterCountBadge');
 
   var propertiesToggleBtn = document.getElementById('propertiesToggleBtn');
@@ -271,7 +287,7 @@ export function getClientScript(): string {
     if (addGroupBtn) {
       addGroupBtn.addEventListener('click', function() {
         var allProps = getAllAvailablePropertyKeys();
-        var defaultProp = allProps[0] || 'rating';
+        var defaultProp = allProps[0] || 'file.name';
         activeGroupRule = { property: defaultProp, direction: 'DESC' };
         saveGroupState();
         renderGroupPopover();
@@ -284,13 +300,44 @@ export function getClientScript(): string {
         var allProps = getAllAvailablePropertyKeys();
         var defaultProp = allProps[0] || 'file.name';
         var pType = getPropertyType(defaultProp);
-        var opList = OPERATORS_BY_TYPE[pType] || OPERATORS_BY_TYPE.text;
-        var defaultOp = opList[0] ? opList[0].id : 'contains';
-        activeFilterRules.push({
-          conjunction: activeFilterRules.length === 0 ? 'where' : 'and',
+        var opList = getOperatorsForProperty(defaultProp, pType);
+        var defaultOp = opList[0] ? opList[0].id : 'is';
+        if (!activeFilterTree || activeFilterTree.type !== 'group') {
+          activeFilterTree = { type: 'group', conjunction: 'and', children: [] };
+        }
+        activeFilterTree.children.push({
+          type: 'rule',
           property: defaultProp,
           operator: defaultOp,
           value: ''
+        });
+        saveFilterState();
+        renderFilterPopover();
+        renderCards();
+      });
+    }
+
+    if (addFilterGroupBtn) {
+      addFilterGroupBtn.addEventListener('click', function() {
+        var allProps = getAllAvailablePropertyKeys();
+        var defaultProp = allProps[0] || 'file.name';
+        var pType = getPropertyType(defaultProp);
+        var opList = getOperatorsForProperty(defaultProp, pType);
+        var defaultOp = opList[0] ? opList[0].id : 'is';
+        if (!activeFilterTree || activeFilterTree.type !== 'group') {
+          activeFilterTree = { type: 'group', conjunction: 'and', children: [] };
+        }
+        activeFilterTree.children.push({
+          type: 'group',
+          conjunction: 'and',
+          children: [
+            {
+              type: 'rule',
+              property: defaultProp,
+              operator: defaultOp,
+              value: ''
+            }
+          ]
         });
         saveFilterState();
         renderFilterPopover();
@@ -329,11 +376,12 @@ export function getClientScript(): string {
 
     if (filterToggleBtn) {
       var isFilterOpen = filterPopover && filterPopover.classList.contains('open');
-      var hasFilters = activeFilterRules.length > 0;
+      var filterCount = countFilterRules(activeFilterTree);
+      var hasFilters = filterCount > 0;
       filterToggleBtn.classList.toggle('active', isFilterOpen || hasFilters);
       if (filterCountBadge) {
         if (hasFilters) {
-          filterCountBadge.textContent = String(activeFilterRules.length);
+          filterCountBadge.textContent = String(filterCount);
           filterCountBadge.style.display = 'inline-block';
         } else {
           filterCountBadge.style.display = 'none';
@@ -403,9 +451,20 @@ export function getClientScript(): string {
     // 3. Filter state
     var savedFilters = localStorage.getItem(storagePrefix + viewKey + '_filters');
     if (savedFilters) {
-      try { activeFilterRules = JSON.parse(savedFilters) || []; } catch (e) { activeFilterRules = []; }
+      try {
+        var parsedSaved = JSON.parse(savedFilters);
+        if (parsedSaved && parsedSaved.type === 'group' && Array.isArray(parsedSaved.children)) {
+          activeFilterTree = parsedSaved;
+        } else if (Array.isArray(parsedSaved)) {
+          activeFilterTree = migrateFlatFilterRules(parsedSaved);
+        } else {
+          activeFilterTree = parseInitialViewFilters(base.filters, view.filters);
+        }
+      } catch (e) {
+        activeFilterTree = parseInitialViewFilters(base.filters, view.filters);
+      }
     } else {
-      activeFilterRules = parseInitialViewFilters(view.filters);
+      activeFilterTree = parseInitialViewFilters(base.filters, view.filters);
     }
 
     // 4. Properties order state
@@ -417,7 +476,7 @@ export function getClientScript(): string {
     } else if (view.type === 'table') {
       activeOrder = getAllAvailablePropertyKeys();
     } else {
-      activeOrder = ['file.name', 'rating'];
+      activeOrder = getAllAvailablePropertyKeys().slice(0, 4);
     }
 
     if (propertiesToggleBtn) {
@@ -442,72 +501,386 @@ export function getClientScript(): string {
     updateToolbarActiveStates();
   }
 
-  function parseInitialViewFilters(filters) {
-    var rules = [];
-    if (!filters) return rules;
+  function countFilterRules(node) {
+    if (!node) return 0;
+    if (node.type === 'rule' || node.type === 'expression') return 1;
+    if (node.type === 'group' && Array.isArray(node.children)) {
+      return node.children.reduce(function(sum, child) { return sum + countFilterRules(child); }, 0);
+    }
+    return 0;
+  }
 
-    function parseItem(item) {
-      if (typeof item === 'string') {
-        var str = item.trim();
-        var isNegated = false;
-        if (str.startsWith('!')) {
-          isNegated = true;
-          str = str.slice(1).trim();
-        }
-        var tagMatch = str.match(/^file\\.hasTag\\(["']?(.*?)["']?\\)$/);
-        if (tagMatch) {
-          rules.push({
-            conjunction: rules.length === 0 ? 'where' : 'and',
-            property: 'file.tags',
-            operator: isNegated ? 'does_not_contain' : 'has_tag',
-            value: tagMatch[1].replace(/^#/, '')
-          });
-          return;
-        }
+  function migrateFlatFilterRules(flatRules) {
+    if (!Array.isArray(flatRules) || flatRules.length === 0) {
+      return { type: 'group', conjunction: 'and', children: [] };
+    }
+    var hasOr = flatRules.some(function(r, i) { return i > 0 && r && r.conjunction === 'or'; });
+    var hasAnd = flatRules.some(function(r, i) { return i > 0 && (!r || r.conjunction !== 'or'); });
+    var conj = (hasOr && !hasAnd) ? 'or' : 'and';
+    return {
+      type: 'group',
+      conjunction: conj,
+      children: flatRules.map(function(r) {
+        return {
+          type: 'rule',
+          property: normalizePropertyName(r.property || 'file.name'),
+          operator: r.operator || 'is',
+          value: r.value !== undefined ? r.value : ''
+        };
+      })
+    };
+  }
 
-        var contMatch = str.match(/^([\\w.-]+)\\.contains\\(["']?(.*?)["']?\\)$/);
-        if (contMatch) {
-          var contProp = contMatch[1];
-          var contVal = contMatch[2];
-          var isTag = contProp === 'file.tags' || contProp === 'tags' || contProp.toLowerCase().indexOf('tag') !== -1;
-          var propName = (contProp === 'file.tags' || contProp === 'file.tag') ? 'file.tags' : contProp;
-          rules.push({
-            conjunction: rules.length === 0 ? 'where' : 'and',
-            property: propName,
-            operator: isNegated ? 'does_not_contain' : (isTag ? 'has_tag' : 'contains'),
-            value: isTag ? contVal.replace(/^#/, '') : contVal
-          });
-          return;
-        }
+  function normalizePropertyName(raw) {
+    if (!raw) return 'file.name';
+    var clean = String(raw).trim();
+    var bracketMatch = clean.match(/^(?:note)?\\[(["'])(.*?)\\1\\]$/);
+    if (bracketMatch && bracketMatch[2] !== undefined) {
+      clean = bracketMatch[2];
+    } else if (clean.indexOf('note.') === 0) {
+      clean = clean.slice('note.'.length);
+    }
+    if (clean === 'file.tag') return 'file.tags';
+    if (clean === 'name') return 'file.name';
+    if (clean === 'folder') return 'file.folder';
+    return clean;
+  }
 
-        var ops = ['!=', '==', '>=', '<=', '>', '<'];
-        for (var i = 0; i < ops.length; i++) {
-          var op = ops[i];
-          var parts = str.split(op);
-          if (parts.length === 2) {
-            var pName = parts[0].trim();
-            var rawVal = parts[1].trim().replace(/^["']/, '').replace(/["']$/, '');
-            var val = !isNaN(Number(rawVal)) ? Number(rawVal) : rawVal;
-            var mappedOp = op === '==' ? '=' : (op === '!=' ? '!=' : op);
-            rules.push({
-              conjunction: rules.length === 0 ? 'where' : 'and',
-              property: pName,
-              operator: mappedOp,
-              value: val
-            });
-            return;
+  function getOperatorsForProperty(propName, pType) {
+    var list = (OPERATORS_BY_TYPE[pType] || OPERATORS_BY_TYPE.text).slice();
+    if (propName === 'file.folder' || propName === 'file.path') {
+      list.splice(2, 0,
+        { id: 'in_folder', label: 'in folder' },
+        { id: 'not_in_folder', label: 'not in folder' }
+      );
+    }
+    return list;
+  }
+
+  function splitTopLevelCommasClient(str) {
+    var result = [];
+    var depth = 0;
+    var inQuote = null;
+    var current = '';
+    for (var i = 0; i < str.length; i++) {
+      var ch = str[i];
+      if (inQuote) {
+        current += ch;
+        if (ch === inQuote && str[i - 1] !== '\\\\') inQuote = null;
+      } else if (ch === '"' || ch === "'") {
+        inQuote = ch;
+        current += ch;
+      } else if (ch === '(' || ch === '[' || ch === '{') {
+        depth++;
+        current += ch;
+      } else if (ch === ')' || ch === ']' || ch === '}') {
+        depth--;
+        current += ch;
+      } else if (ch === ',' && depth === 0) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    if (current.trim().length > 0) result.push(current.trim());
+    return result;
+  }
+
+  function findTopLevelComparisonClient(expr) {
+    var operators = ['==', '!=', '>=', '<=', '>', '<'];
+    var depth = 0;
+    var inQuote = null;
+    for (var i = 0; i < expr.length; i++) {
+      var ch = expr[i];
+      if (inQuote) {
+        if (ch === inQuote && expr[i - 1] !== '\\\\') inQuote = null;
+        continue;
+      }
+      if (ch === '"' || ch === "'") {
+        inQuote = ch;
+        continue;
+      }
+      if (ch === '(' || ch === '[' || ch === '{') { depth++; continue; }
+      if (ch === ')' || ch === ']' || ch === '}') { depth--; continue; }
+      if (depth === 0) {
+        for (var o = 0; o < operators.length; o++) {
+          var op = operators[o];
+          if (expr.slice(i, i + op.length) === op) {
+            return {
+              left: expr.slice(0, i).trim(),
+              op: op,
+              right: expr.slice(i + op.length).trim()
+            };
           }
         }
-      } else if (Array.isArray(item)) {
-        item.forEach(parseItem);
-      } else if (typeof item === 'object' && item !== null) {
-        if (Array.isArray(item.and)) item.and.forEach(parseItem);
-        if (Array.isArray(item.or)) item.or.forEach(parseItem);
+      }
+    }
+    return null;
+  }
+
+  function parseLiteralValueClient(rawVal) {
+    var s = String(rawVal || '').trim();
+    var dateMatch = s.match(/^date\\((["'])(.*?)\\1\\)$/);
+    if (dateMatch) return dateMatch[2];
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+      return s.slice(1, -1);
+    }
+    if (s === 'true') return true;
+    if (s === 'false') return false;
+    if (s === 'null' || s === 'undefined') return '';
+    if (s !== '' && !isNaN(Number(s))) return Number(s);
+    return s;
+  }
+
+  function parseStringFilterExpression(rawExpr) {
+    var original = String(rawExpr || '').trim();
+    if (!original) return null;
+
+    var str = original;
+    var isNegated = false;
+    while (str.startsWith('!') && !str.startsWith('!=')) {
+      isNegated = !isNegated;
+      str = str.slice(1).trim();
+    }
+
+    // Method call: target.method(args)
+    var methodMatch = str.match(/^((?:note)?\\[["'].*?["']\\]|[\\w.-]+)\\.(\\w+)\\(([\\s\\S]*)\\)$/);
+    if (methodMatch) {
+      var rawTarget = methodMatch[1];
+      var methodName = methodMatch[2];
+      var argsStr = methodMatch[3];
+      var parsedArgs = argsStr.trim() ? splitTopLevelCommasClient(argsStr).map(parseLiteralValueClient) : [];
+      var propName = normalizePropertyName(rawTarget);
+
+      if (rawTarget === 'file' && methodName === 'hasTag') {
+        var tags = parsedArgs.map(function(a) { return String(a).replace(/^#/, ''); });
+        if (tags.length > 1) {
+          return {
+            type: 'rule',
+            property: 'file.tags',
+            operator: isNegated ? 'does_not_contain_any' : 'contains_any',
+            value: tags.join(', ')
+          };
+        }
+        return {
+          type: 'rule',
+          property: 'file.tags',
+          operator: isNegated ? 'does_not_contain' : 'has_tag',
+          value: tags[0] || ''
+        };
+      }
+
+      if (rawTarget === 'file' && methodName === 'inFolder') {
+        return {
+          type: 'rule',
+          property: 'file.folder',
+          operator: isNegated ? 'not_in_folder' : 'in_folder',
+          value: parsedArgs[0] !== undefined ? String(parsedArgs[0]) : ''
+        };
+      }
+
+      if (rawTarget === 'file' && methodName === 'hasLink') {
+        return {
+          type: 'rule',
+          property: 'file.links',
+          operator: isNegated ? 'does_not_contain' : 'contains',
+          value: parsedArgs[0] !== undefined ? String(parsedArgs[0]) : ''
+        };
+      }
+
+      if (rawTarget === 'file' && methodName === 'hasProperty') {
+        return {
+          type: 'rule',
+          property: normalizePropertyName(parsedArgs[0] || ''),
+          operator: isNegated ? 'is_empty' : 'is_not_empty',
+          value: ''
+        };
+      }
+
+      if (methodName === 'isEmpty') {
+        return {
+          type: 'rule',
+          property: propName,
+          operator: isNegated ? 'is_not_empty' : 'is_empty',
+          value: ''
+        };
+      }
+
+      if (methodName === 'startsWith') {
+        return {
+          type: 'rule',
+          property: propName,
+          operator: isNegated ? 'does_not_start_with' : 'starts_with',
+          value: parsedArgs[0] !== undefined ? String(parsedArgs[0]) : ''
+        };
+      }
+
+      if (methodName === 'endsWith') {
+        return {
+          type: 'rule',
+          property: propName,
+          operator: isNegated ? 'does_not_end_with' : 'ends_with',
+          value: parsedArgs[0] !== undefined ? String(parsedArgs[0]) : ''
+        };
+      }
+
+      if (methodName === 'matches') {
+        return {
+          type: 'rule',
+          property: propName,
+          operator: isNegated ? 'does_not_match' : 'matches',
+          value: parsedArgs[0] !== undefined ? String(parsedArgs[0]) : ''
+        };
+      }
+
+      if (methodName === 'containsAny') {
+        return {
+          type: 'rule',
+          property: propName,
+          operator: isNegated ? 'does_not_contain_any' : 'contains_any',
+          value: parsedArgs.join(', ')
+        };
+      }
+
+      if (methodName === 'containsAll') {
+        return {
+          type: 'rule',
+          property: propName,
+          operator: isNegated ? 'does_not_contain_all' : 'contains_all',
+          value: parsedArgs.join(', ')
+        };
+      }
+
+      if (methodName === 'contains' || methodName === 'hasTag') {
+        var valStr = parsedArgs[0] !== undefined ? String(parsedArgs[0]) : '';
+        var isTag = propName === 'file.tags' || propName === 'tags' || propName.toLowerCase().indexOf('tag') !== -1;
+        return {
+          type: 'rule',
+          property: propName,
+          operator: isNegated ? 'does_not_contain' : (isTag && methodName === 'hasTag' ? 'has_tag' : 'contains'),
+          value: isTag ? valStr.replace(/^#/, '') : valStr
+        };
       }
     }
 
-    parseItem(filters);
-    return rules;
+    // Binary comparison: left op right
+    var comp = findTopLevelComparisonClient(str);
+    if (comp) {
+      var leftProp = normalizePropertyName(comp.left);
+      // Only map as a simple rule if left side looks like a property identifier
+      if (/^(?:(?:note)?\\[["'].*?["']\\]|[\\w.-]+)$/.test(comp.left)) {
+        var pType = getPropertyType(leftProp);
+        var val = parseLiteralValueClient(comp.right);
+        var op = comp.op;
+        if (isNegated) {
+          if (op === '==') op = '!=';
+          else if (op === '!=') op = '==';
+          else if (op === '>') op = '<=';
+          else if (op === '<') op = '>=';
+          else if (op === '>=') op = '<';
+          else if (op === '<=') op = '>';
+        }
+
+        var mappedOp;
+        if (pType === 'checkbox') {
+          var boolVal = val === true || String(val).toLowerCase() === 'true';
+          mappedOp = (op === '==' ? boolVal : !boolVal) ? 'is_checked' : 'is_not_checked';
+          val = '';
+        } else if (pType === 'number' || (typeof val === 'number' && pType !== 'date')) {
+          mappedOp = op === '==' ? '=' : op;
+        } else if (pType === 'date') {
+          if (op === '==') mappedOp = 'is';
+          else if (op === '!=') mappedOp = 'is_not';
+          else if (op === '<') mappedOp = 'is_before';
+          else if (op === '>') mappedOp = 'is_after';
+          else if (op === '<=') mappedOp = 'is_on_or_before';
+          else if (op === '>=') mappedOp = 'is_on_or_after';
+          else mappedOp = 'is';
+        } else {
+          mappedOp = op === '==' ? 'is' : (op === '!=' ? 'is_not' : op);
+        }
+
+        return {
+          type: 'rule',
+          property: leftProp,
+          operator: mappedOp,
+          value: val
+        };
+      }
+    }
+
+    // Bare property truthiness: e.g. "done" or "!archived"
+    if (/^(?:(?:note)?\\[["'].*?["']\\]|[\\w.-]+)$/.test(str)) {
+      var bareProp = normalizePropertyName(str);
+      var bareType = getPropertyType(bareProp);
+      return {
+        type: 'rule',
+        property: bareProp,
+        operator: bareType === 'checkbox'
+          ? (isNegated ? 'is_not_checked' : 'is_checked')
+          : (isNegated ? 'is_empty' : 'is_not_empty'),
+        value: ''
+      };
+    }
+
+    // Fallback: preserve arbitrary expression so it is never silently dropped
+    return {
+      type: 'expression',
+      expression: original
+    };
+  }
+
+  function parseFilterNode(node) {
+    if (!node) return null;
+    if (typeof node === 'string') {
+      return parseStringFilterExpression(node);
+    }
+    if (Array.isArray(node)) {
+      var arrChildren = node.map(parseFilterNode).filter(Boolean);
+      return { type: 'group', conjunction: 'and', children: arrChildren };
+    }
+    if (typeof node === 'object') {
+      if (Array.isArray(node.and)) {
+        return { type: 'group', conjunction: 'and', children: node.and.map(parseFilterNode).filter(Boolean) };
+      }
+      if (Array.isArray(node.or)) {
+        return { type: 'group', conjunction: 'or', children: node.or.map(parseFilterNode).filter(Boolean) };
+      }
+      if (node.not !== undefined) {
+        var notArr = Array.isArray(node.not) ? node.not : [node.not];
+        return { type: 'group', conjunction: 'not', children: notArr.map(parseFilterNode).filter(Boolean) };
+      }
+    }
+    return null;
+  }
+
+  function parseInitialViewFilters(baseFilters, viewFilters) {
+    var root = { type: 'group', conjunction: 'and', children: [] };
+    var nodes = [];
+    if (baseFilters) {
+      var bf = parseFilterNode(baseFilters);
+      if (bf) nodes.push(bf);
+    }
+    if (viewFilters) {
+      var vf = parseFilterNode(viewFilters);
+      if (vf) nodes.push(vf);
+    }
+    if (nodes.length === 0) return root;
+    if (nodes.length === 1) {
+      if (nodes[0].type === 'group') return nodes[0];
+      root.children.push(nodes[0]);
+      return root;
+    }
+    // Both baseFilters and viewFilters exist: combine with AND
+    nodes.forEach(function(n) {
+      if (n.type === 'group' && n.conjunction === 'and') {
+        n.children.forEach(function(c) { root.children.push(c); });
+      } else {
+        root.children.push(n);
+      }
+    });
+    return root;
   }
 
   function getViewStorageKey() {
@@ -526,7 +899,7 @@ export function getClientScript(): string {
   }
 
   function saveFilterState() {
-    localStorage.setItem(storagePrefix + getViewStorageKey() + '_filters', JSON.stringify(activeFilterRules));
+    localStorage.setItem(storagePrefix + getViewStorageKey() + '_filters', JSON.stringify(activeFilterTree));
     updateToolbarActiveStates();
   }
 
@@ -541,7 +914,11 @@ export function getClientScript(): string {
   function getAllAvailablePropertyKeys() {
     var set = new Set();
     set.add('file.name');
+    set.add('file.path');
+    set.add('file.folder');
+    set.add('file.ext');
     set.add('file.tags');
+    set.add('file.links');
     set.add('tags');
 
     Object.keys(propertyTypes).forEach(function(k) {
@@ -561,29 +938,50 @@ export function getClientScript(): string {
   }
 
   function getPropertyMetadata(propName) {
+    var clean = normalizePropertyName(propName);
+    if (propertyTypes[clean]) return propertyTypes[clean];
     if (propertyTypes[propName]) return propertyTypes[propName];
 
     var type = 'text';
     var icon = 'type';
 
-    if (propName === 'rating' || propName.toLowerCase().includes('score') || propName === 'pages' || propName === 'year') {
-      type = 'number';
-      icon = 'hash';
-    } else if (propName === 'date' || propName.toLowerCase().includes('date')) {
-      type = 'date';
-      icon = 'calendar';
-    } else if (propName === 'badge' || propName === 'tags' || propName === 'file.tags') {
-      type = 'list';
-      icon = 'tag';
-    } else if (propName === 'file' || propName === 'file.name') {
+    if (clean === 'file' || clean === 'file.name' || clean === 'file.path' || clean === 'file.ext') {
       type = 'text';
       icon = 'file-text';
-    } else if (propName.startsWith('formula.')) {
+    } else if (clean === 'file.folder') {
+      type = 'text';
+      icon = 'folder';
+    } else if (clean === 'file.ctime' || clean === 'file.mtime') {
+      type = 'date';
+      icon = 'calendar';
+    } else if (clean === 'file.size') {
+      type = 'number';
+      icon = 'hash';
+    } else if (clean === 'file.links') {
+      type = 'list';
+      icon = 'link';
+    } else if (clean === 'tags' || clean === 'file.tags') {
+      type = 'list';
+      icon = 'tag';
+    } else if (clean.startsWith('formula.')) {
       type = 'text';
       icon = 'calculator';
+    } else {
+      // Infer from actual item values instead of hardcoded property names
+      for (var i = 0; i < items.length; i++) {
+        var v = getItemValue(items[i], clean);
+        if (v !== undefined && v !== null && v !== '') {
+          if (typeof v === 'boolean') { type = 'checkbox'; icon = 'check-square'; }
+          else if (typeof v === 'number') { type = 'number'; icon = 'hash'; }
+          else if (Array.isArray(v)) { type = 'list'; icon = 'list'; }
+          else if (typeof v === 'string' && /^\\d{4}-\\d{2}-\\d{2}/.test(v.trim())) { type = 'date'; icon = 'calendar'; }
+          else if (typeof v === 'string' && v.trim().startsWith('[[') && v.trim().endsWith(']]')) { type = 'link'; icon = 'link'; }
+          break;
+        }
+      }
     }
 
-    return { id: propName, name: propName, type: type, icon: icon };
+    return { id: clean, name: clean, type: type, icon: icon };
   }
 
   function getPropertyType(propName) {
@@ -603,10 +1001,15 @@ export function getClientScript(): string {
 
   function getItemValue(item, propPath) {
     if (!propPath) return undefined;
-    var clean = propPath.trim();
+    var clean = normalizePropertyName(propPath);
     if (clean === 'file.name' || clean === 'name' || clean === 'file') return item.title;
     if (clean === 'file.path') return item.path;
     if (clean === 'file.folder' || clean === 'folder') return item.folder;
+    if (clean === 'file.ext') return item.ext || 'md';
+    if (clean === 'file.ctime') return item.ctime;
+    if (clean === 'file.mtime') return item.mtime;
+    if (clean === 'file.size') return item.size;
+    if (clean === 'file.links') return item.links || [];
     if (clean === 'file.tags' || clean === 'file.tag') {
       if (item.tags && Array.isArray(item.tags)) return item.tags;
       if (item.properties && item.properties.tags) {
@@ -852,37 +1255,133 @@ export function getClientScript(): string {
     updateToolbarActiveStates();
   }
 
+  function normalizeOperatorAlias(op, pType) {
+    if (pType === 'number') {
+      if (op === 'is') return '=';
+      if (op === 'is_not') return '!=';
+    } else {
+      if (op === '=') return 'is';
+      if (op === '!=') return 'is_not';
+    }
+    return op;
+  }
+
   function renderFilterPopover() {
     if (!filterRulesList) return;
     filterRulesList.innerHTML = '';
 
-    var allProps = getAllAvailablePropertyKeys();
+    if (!activeFilterTree || activeFilterTree.type !== 'group') {
+      activeFilterTree = { type: 'group', conjunction: 'and', children: [] };
+    }
 
-    activeFilterRules.forEach(function(rule, idx) {
+    var allProps = getAllAvailablePropertyKeys();
+    renderFilterGroupNode(activeFilterTree, filterRulesList, true, null, -1, allProps);
+    updateToolbarActiveStates();
+  }
+
+  function renderFilterGroupNode(groupNode, container, isRoot, parentGroup, indexInParent, allProps) {
+    var box = document.createElement('div');
+    box.className = isRoot ? 'filter-group-box' : 'filter-group-box filter-group-nested';
+
+    // Group conjunction header (All / Any / None)
+    var header = document.createElement('div');
+    header.className = 'filter-group-header';
+
+    var conjSelect = document.createElement('select');
+    conjSelect.className = 'filter-group-conjunction-select';
+    [
+      { id: 'and', label: 'All of the following are true' },
+      { id: 'or', label: 'Any of the following are true' },
+      { id: 'not', label: 'None of the following are true' }
+    ].forEach(function(optDef) {
+      var opt = document.createElement('option');
+      opt.value = optDef.id;
+      opt.textContent = optDef.label;
+      if ((groupNode.conjunction || 'and') === optDef.id) opt.selected = true;
+      conjSelect.appendChild(opt);
+    });
+    conjSelect.addEventListener('change', function(e) {
+      groupNode.conjunction = e.target.value;
+      saveFilterState();
+      renderFilterPopover();
+      renderCards();
+    });
+    header.appendChild(conjSelect);
+
+    if (!isRoot && parentGroup) {
+      var delGroupBtn = document.createElement('button');
+      delGroupBtn.className = 'popover-rule-delete';
+      delGroupBtn.title = 'Remove filter group';
+      delGroupBtn.appendChild(createIconSvg('x', 'b2h-icon-sm'));
+      delGroupBtn.addEventListener('click', function() {
+        parentGroup.children.splice(indexInParent, 1);
+        saveFilterState();
+        renderFilterPopover();
+        renderCards();
+      });
+      header.appendChild(delGroupBtn);
+    }
+
+    box.appendChild(header);
+
+    var childrenContainer = document.createElement('div');
+    childrenContainer.className = 'filter-group-children';
+
+    (groupNode.children || []).forEach(function(child, idx) {
+      if (child.type === 'group') {
+        renderFilterGroupNode(child, childrenContainer, false, groupNode, idx, allProps);
+        return;
+      }
+
       var row = document.createElement('div');
       row.className = 'popover-rule-row';
       row.setAttribute('draggable', 'true');
 
-      // Prefix button (where for row 0, and/or toggle for row > 0)
+      // Prefix (where for row 0, group conjunction for row > 0)
       if (idx === 0) {
         var whereLabel = document.createElement('span');
         whereLabel.className = 'filter-conjunction-btn';
-        whereLabel.textContent = 'where';
+        whereLabel.textContent = groupNode.conjunction === 'not' ? 'not' : 'where';
         whereLabel.style.cursor = 'default';
         row.appendChild(whereLabel);
       } else {
         var conjBtn = document.createElement('button');
         conjBtn.className = 'filter-conjunction-btn';
-        conjBtn.textContent = rule.conjunction || 'and';
+        conjBtn.textContent = groupNode.conjunction || 'and';
         conjBtn.title = 'Toggle AND / OR';
         conjBtn.addEventListener('click', function() {
-          rule.conjunction = (rule.conjunction === 'or') ? 'and' : 'or';
-          conjBtn.textContent = rule.conjunction;
+          groupNode.conjunction = (groupNode.conjunction === 'or') ? 'and' : 'or';
           saveFilterState();
+          renderFilterPopover();
           renderCards();
         });
         row.appendChild(conjBtn);
       }
+
+      if (child.type === 'expression') {
+        var exprPill = document.createElement('div');
+        exprPill.className = 'popover-rule-pill filter-expression-pill';
+        exprPill.textContent = child.expression || '';
+        row.appendChild(exprPill);
+
+        var delExprBtn = document.createElement('button');
+        delExprBtn.className = 'popover-rule-delete';
+        delExprBtn.title = 'Remove filter';
+        delExprBtn.appendChild(createIconSvg('x', 'b2h-icon-sm'));
+        delExprBtn.addEventListener('click', function() {
+          groupNode.children.splice(idx, 1);
+          saveFilterState();
+          renderFilterPopover();
+          renderCards();
+        });
+        row.appendChild(delExprBtn);
+
+        childrenContainer.appendChild(row);
+        return;
+      }
+
+      var rule = child;
+      rule.property = normalizePropertyName(rule.property);
 
       // Pill container
       var pill = document.createElement('div');
@@ -896,9 +1395,13 @@ export function getClientScript(): string {
       pill.appendChild(propIconSpan);
 
       // 1. Property Select
+      var propOptions = allProps.slice();
+      if (rule.property && propOptions.indexOf(rule.property) === -1) {
+        propOptions.push(rule.property);
+      }
       var propSelect = document.createElement('select');
       propSelect.className = 'pill-select';
-      allProps.forEach(function(p) {
+      propOptions.forEach(function(p) {
         var m = getPropertyMetadata(p);
         var opt = document.createElement('option');
         opt.value = p;
@@ -909,10 +1412,13 @@ export function getClientScript(): string {
 
       propSelect.addEventListener('change', function(e) {
         rule.property = e.target.value;
-        var pType = getPropertyType(rule.property);
-        var opList = OPERATORS_BY_TYPE[pType] || OPERATORS_BY_TYPE.text;
-        rule.operator = opList[0] ? opList[0].id : 'contains';
-        rule.value = '';
+        var pTypeNew = getPropertyType(rule.property);
+        var opListNew = getOperatorsForProperty(rule.property, pTypeNew);
+        rule.operator = normalizeOperatorAlias(rule.operator, pTypeNew);
+        var stillValid = opListNew.some(function(o) { return o.id === rule.operator; });
+        if (!stillValid && opListNew[0]) {
+          rule.operator = opListNew[0].id;
+        }
         saveFilterState();
         renderFilterPopover();
         renderCards();
@@ -925,7 +1431,8 @@ export function getClientScript(): string {
 
       // 2. Operator Select
       var pType = getPropertyType(rule.property);
-      var opList = OPERATORS_BY_TYPE[pType] || OPERATORS_BY_TYPE.text;
+      var opList = getOperatorsForProperty(rule.property, pType);
+      rule.operator = normalizeOperatorAlias(rule.operator, pType);
 
       var opSelect = document.createElement('select');
       opSelect.className = 'pill-select';
@@ -934,7 +1441,7 @@ export function getClientScript(): string {
       opList.forEach(function(opDef) {
         var opt = document.createElement('option');
         opt.value = opDef.id;
-        opt.textContent = opDef.label + ' ↕';
+        opt.textContent = opDef.label;
         if (opDef.id === rule.operator) {
           opt.selected = true;
           currentOpDef = opDef;
@@ -942,7 +1449,15 @@ export function getClientScript(): string {
         opSelect.appendChild(opt);
       });
 
-      if (!currentOpDef && opList[0]) {
+      // Preserve any custom/cross-type operator instead of silently overwriting it
+      if (!currentOpDef && rule.operator) {
+        currentOpDef = { id: rule.operator, label: rule.operator };
+        var extraOpt = document.createElement('option');
+        extraOpt.value = rule.operator;
+        extraOpt.textContent = rule.operator;
+        extraOpt.selected = true;
+        opSelect.appendChild(extraOpt);
+      } else if (!currentOpDef && opList[0]) {
         currentOpDef = opList[0];
         rule.operator = currentOpDef.id;
       }
@@ -973,7 +1488,7 @@ export function getClientScript(): string {
         } else {
           valInput.type = 'text';
           valInput.placeholder = 'Value...';
-          valInput.value = rule.value || '';
+          valInput.value = (rule.value !== undefined && rule.value !== null) ? String(rule.value) : '';
         }
 
         valInput.addEventListener('input', function(e) {
@@ -992,27 +1507,50 @@ export function getClientScript(): string {
       delBtn.title = 'Remove filter';
       delBtn.appendChild(createIconSvg('x', 'b2h-icon-sm'));
       delBtn.addEventListener('click', function() {
-        activeFilterRules.splice(idx, 1);
-        if (activeFilterRules.length > 0 && activeFilterRules[0]) {
-          activeFilterRules[0].conjunction = 'where';
-        }
+        groupNode.children.splice(idx, 1);
         saveFilterState();
         renderFilterPopover();
         renderCards();
       });
       row.appendChild(delBtn);
 
-      setupDragDrop(row, idx, activeFilterRules, function() {
-        if (activeFilterRules[0]) activeFilterRules[0].conjunction = 'where';
+      setupDragDrop(row, idx, groupNode.children, function() {
         saveFilterState();
         renderFilterPopover();
         renderCards();
       });
 
-      filterRulesList.appendChild(row);
+      childrenContainer.appendChild(row);
     });
 
-    updateToolbarActiveStates();
+    box.appendChild(childrenContainer);
+
+    if (!isRoot) {
+      var nestedActions = document.createElement('div');
+      nestedActions.className = 'popover-add-actions';
+      var addNestedRuleBtn = document.createElement('button');
+      addNestedRuleBtn.className = 'popover-add-btn';
+      addNestedRuleBtn.appendChild(createIconSvg('plus', 'b2h-icon-xs'));
+      addNestedRuleBtn.appendChild(document.createTextNode(' Add filter'));
+      addNestedRuleBtn.addEventListener('click', function() {
+        var defaultProp = allProps[0] || 'file.name';
+        var pTypeDef = getPropertyType(defaultProp);
+        var opListDef = getOperatorsForProperty(defaultProp, pTypeDef);
+        groupNode.children.push({
+          type: 'rule',
+          property: defaultProp,
+          operator: opListDef[0] ? opListDef[0].id : 'is',
+          value: ''
+        });
+        saveFilterState();
+        renderFilterPopover();
+        renderCards();
+      });
+      nestedActions.appendChild(addNestedRuleBtn);
+      box.appendChild(nestedActions);
+    }
+
+    container.appendChild(box);
   }
 
   function renderPropertiesPopover() {
@@ -1096,27 +1634,48 @@ export function getClientScript(): string {
   // =========================================================================
 
   function passesFilterRules(item) {
-    if (activeFilterRules.length === 0) return true;
+    return evaluateFilterNode(item, activeFilterTree);
+  }
 
-    var overallResult = true;
-
-    for (var i = 0; i < activeFilterRules.length; i++) {
-      var rule = activeFilterRules[i];
-      var rulePassed = evaluateSingleFilterRule(item, rule);
-
-      if (i === 0) {
-        overallResult = rulePassed;
-      } else {
-        var conj = rule.conjunction || 'and';
-        if (conj === 'or') {
-          overallResult = overallResult || rulePassed;
-        } else {
-          overallResult = overallResult && rulePassed;
-        }
+  function evaluateFilterNode(item, node) {
+    if (!node) return true;
+    if (node.type === 'group') {
+      var children = node.children || [];
+      if (children.length === 0) return true;
+      var conj = node.conjunction || 'and';
+      if (conj === 'or') {
+        return children.some(function(child) { return evaluateFilterNode(item, child); });
       }
+      if (conj === 'not') {
+        return !children.some(function(child) { return evaluateFilterNode(item, child); });
+      }
+      return children.every(function(child) { return evaluateFilterNode(item, child); });
     }
+    if (node.type === 'expression') {
+      return evaluateClientExpression(item, node.expression);
+    }
+    return evaluateSingleFilterRule(item, node);
+  }
 
-    return overallResult;
+  function evaluateClientExpression(item, rawExpr) {
+    var expr = String(rawExpr || '').trim();
+    if (!expr) return true;
+    while (expr.startsWith('(') && expr.endsWith(')')) {
+      expr = expr.slice(1, -1).trim();
+    }
+    var orParts = expr.split('||');
+    if (orParts.length > 1) {
+      return orParts.some(function(p) { return evaluateClientExpression(item, p); });
+    }
+    var andParts = expr.split('&&');
+    if (andParts.length > 1) {
+      return andParts.every(function(p) { return evaluateClientExpression(item, p); });
+    }
+    var parsed = parseStringFilterExpression(expr);
+    if (parsed && parsed.type === 'rule') {
+      return evaluateSingleFilterRule(item, parsed);
+    }
+    return true;
   }
 
   function evaluateSingleFilterRule(item, rule) {
@@ -1136,20 +1695,29 @@ export function getClientScript(): string {
       return true;
     }
 
-    if (pType === 'checkbox') {
-      var isTrue = Boolean(rawVal) === true;
-      if (op === 'is_checked') return isTrue;
-      if (op === 'is_not_checked') return !isTrue;
-      return true;
+    if (op === 'is_checked') {
+      return rawVal === true || String(rawVal).toLowerCase() === 'true';
+    }
+    if (op === 'is_not_checked') {
+      return !(rawVal === true || String(rawVal).toLowerCase() === 'true');
     }
 
-    if (pType === 'number') {
+    if (op === 'in_folder' || op === 'not_in_folder') {
+      var folderTarget = String(target != null ? target : '').replace(/^\\/+|\\/+$/g, '').toLowerCase();
+      var itemFolder = String(rawVal != null ? rawVal : '').replace(/^\\/+|\\/+$/g, '').toLowerCase();
+      var inFolder = folderTarget === '' ? itemFolder === '' : (itemFolder === folderTarget || itemFolder.indexOf(folderTarget + '/') === 0);
+      return op === 'in_folder' ? inFolder : !inFolder;
+    }
+
+    if (pType === 'number' || (typeof target === 'number' && (op === '=' || op === '!=' || op === '>' || op === '<' || op === '>=' || op === '<='))) {
       var numVal = Number(rawVal);
       var numTarget = Number(target);
-      if (isNaN(numVal) || isNaN(numTarget)) return false;
+      if (rawVal === undefined || rawVal === null || rawVal === '' || isNaN(numVal) || isNaN(numTarget)) {
+        return op === '!=' ? true : false;
+      }
 
-      if (op === '=') return numVal === numTarget;
-      if (op === '!=') return numVal !== numTarget;
+      if (op === '=' || op === 'is') return numVal === numTarget;
+      if (op === '!=' || op === 'is_not') return numVal !== numTarget;
       if (op === '>') return numVal > numTarget;
       if (op === '<') return numVal < numTarget;
       if (op === '>=') return numVal >= numTarget;
@@ -1158,23 +1726,31 @@ export function getClientScript(): string {
     }
 
     if (pType === 'date') {
-      var dateVal = rawVal ? new Date(String(rawVal)).getTime() : NaN;
-      var dateTarget = target ? new Date(String(target)).getTime() : NaN;
-      if (isNaN(dateVal) || isNaN(dateTarget)) return false;
-
-      if (op === 'is') {
-        var d1 = new Date(dateVal).toISOString().slice(0, 10);
-        var d2 = new Date(dateTarget).toISOString().slice(0, 10);
-        return d1 === d2;
+      var resolveDateStr = function(v) {
+        if (v === 'today()') return new Date().toISOString().slice(0, 10);
+        if (v === 'now()') return new Date().toISOString();
+        return v;
+      };
+      var rv = resolveDateStr(rawVal);
+      var tv = resolveDateStr(target);
+      var dateVal = rv ? new Date(String(rv)).getTime() : NaN;
+      var dateTarget = tv ? new Date(String(tv)).getTime() : NaN;
+      if (isNaN(dateVal) || isNaN(dateTarget)) {
+        return op === 'is_not' ? true : false;
       }
-      if (op === 'is_before') return dateVal < dateTarget;
-      if (op === 'is_after') return dateVal > dateTarget;
-      if (op === 'is_on_or_before') return dateVal <= dateTarget;
-      if (op === 'is_on_or_after') return dateVal >= dateTarget;
+
+      var d1 = new Date(dateVal).toISOString().slice(0, 10);
+      var d2 = new Date(dateTarget).toISOString().slice(0, 10);
+      if (op === 'is' || op === '=') return d1 === d2;
+      if (op === 'is_not' || op === '!=') return d1 !== d2;
+      if (op === 'is_before' || op === '<') return dateVal < dateTarget;
+      if (op === 'is_after' || op === '>') return dateVal > dateTarget;
+      if (op === 'is_on_or_before' || op === '<=') return dateVal <= dateTarget;
+      if (op === 'is_on_or_after' || op === '>=') return dateVal >= dateTarget;
       return true;
     }
 
-    if (pType === 'list') {
+    if (pType === 'list' || Array.isArray(rawVal)) {
       var isTagProp = rule.property === 'file.tags' || rule.property === 'tags' || rule.property.toLowerCase().indexOf('tag') !== -1;
       var rawTargetStr = String(target != null ? target : '').toLowerCase();
       var searchStr = isTagProp ? rawTargetStr.replace(/^#/, '') : rawTargetStr;
@@ -1185,32 +1761,44 @@ export function getClientScript(): string {
         return isTagProp ? s.replace(/^#/, '') : s;
       });
 
+      if (op === 'is' || op === '=') {
+        return arr.some(function(it) { return it === searchStr; });
+      }
+      if (op === 'is_not' || op === '!=') {
+        return !arr.some(function(it) { return it === searchStr; });
+      }
       if (op === 'contains' || op === 'has_tag') {
-        return arr.some(function(item) {
-          return item === searchStr || item.indexOf(searchStr) !== -1;
+        return arr.some(function(it) {
+          return it === searchStr || (isTagProp && it.indexOf(searchStr + '/') === 0) || it.indexOf(searchStr) !== -1;
         });
       }
       if (op === 'does_not_contain') {
-        return !arr.some(function(item) {
-          return item === searchStr || item.indexOf(searchStr) !== -1;
+        return !arr.some(function(it) {
+          return it === searchStr || (isTagProp && it.indexOf(searchStr + '/') === 0) || it.indexOf(searchStr) !== -1;
         });
       }
       if (op === 'contains_any') {
         var tokensAny = searchStr.split(/[\\s,]+/).filter(Boolean);
         return tokensAny.some(function(tok) {
-          return arr.some(function(item) { return item === tok || item.indexOf(tok) !== -1; });
+          return arr.some(function(it) { return it === tok || it.indexOf(tok) !== -1; });
         });
       }
       if (op === 'contains_all') {
         var tokensAll = searchStr.split(/[\\s,]+/).filter(Boolean);
         return tokensAll.every(function(tok) {
-          return arr.some(function(item) { return item === tok || item.indexOf(tok) !== -1; });
+          return arr.some(function(it) { return it === tok || it.indexOf(tok) !== -1; });
         });
       }
       if (op === 'does_not_contain_any') {
         var tokensNone = searchStr.split(/[\\s,]+/).filter(Boolean);
         return !tokensNone.some(function(tok) {
-          return arr.some(function(item) { return item === tok || item.indexOf(tok) !== -1; });
+          return arr.some(function(it) { return it === tok || it.indexOf(tok) !== -1; });
+        });
+      }
+      if (op === 'does_not_contain_all') {
+        var tokensNotAll = searchStr.split(/[\\s,]+/).filter(Boolean);
+        return !tokensNotAll.every(function(tok) {
+          return arr.some(function(it) { return it === tok || it.indexOf(tok) !== -1; });
         });
       }
       return true;
@@ -1220,10 +1808,27 @@ export function getClientScript(): string {
     var strVal = String(rawVal != null ? rawVal : '').toLowerCase();
     var strTarget = String(target != null ? target : '').toLowerCase();
 
-    if (op === 'is') return strVal === strTarget;
-    if (op === 'is_not') return strVal !== strTarget;
+    if (op === 'is' || op === '=') return strVal === strTarget;
+    if (op === 'is_not' || op === '!=') return strVal !== strTarget;
     if (op === 'contains') return strVal.includes(strTarget);
     if (op === 'does_not_contain') return !strVal.includes(strTarget);
+    if (op === 'starts_with') return strVal.startsWith(strTarget);
+    if (op === 'does_not_start_with') return !strVal.startsWith(strTarget);
+    if (op === 'ends_with') return strVal.endsWith(strTarget);
+    if (op === 'does_not_end_with') return !strVal.endsWith(strTarget);
+    if (op === 'matches' || op === 'does_not_match') {
+      try {
+        var rx = new RegExp(String(target != null ? target : ''), 'i');
+        var matched = rx.test(String(rawVal != null ? rawVal : ''));
+        return op === 'matches' ? matched : !matched;
+      } catch (e) {
+        return false;
+      }
+    }
+    if (op === '>') return strVal > strTarget;
+    if (op === '<') return strVal < strTarget;
+    if (op === '>=') return strVal >= strTarget;
+    if (op === '<=') return strVal <= strTarget;
 
     return true;
   }

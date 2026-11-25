@@ -1,5 +1,5 @@
 import { parseYaml } from 'obsidian';
-import { BaseFileConfig, BaseViewConfig } from '../types';
+import { BaseFileConfig, BaseFiltersConfig, BaseViewConfig } from '../types';
 
 function isRecord(val: unknown): val is Record<string, unknown> {
 	return typeof val === 'object' && val !== null && !Array.isArray(val);
@@ -156,6 +156,7 @@ export function parseBaseFile(content: string, filePath: string): BaseFileConfig
 		filePath,
 		fileName,
 		baseTitle,
+		filters: parsedObj.filters as BaseFiltersConfig | undefined,
 		formulas,
 		summaries,
 		views,

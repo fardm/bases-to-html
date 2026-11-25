@@ -25,6 +25,7 @@ export interface BaseGroupConfig {
 export interface BaseFilterGroup {
 	and?: Array<string | BaseFilterGroup>;
 	or?: Array<string | BaseFilterGroup>;
+	not?: Array<string | BaseFilterGroup> | string | BaseFilterGroup;
 }
 
 export type BaseFiltersConfig = string | BaseFilterGroup | Array<string | BaseFilterGroup>;
@@ -70,6 +71,7 @@ export interface BaseFileConfig {
 	filePath: string;
 	fileName: string;
 	baseTitle: string;
+	filters?: BaseFiltersConfig;
 	formulas?: Record<string, string>;
 	summaries?: Record<string, string>;
 	views: BaseViewConfig[];
@@ -81,6 +83,11 @@ export interface NoteItem {
 	title: string;
 	path: string;
 	folder: string;
+	ext?: string;
+	ctime?: number;
+	mtime?: number;
+	size?: number;
+	links?: string[];
 	tags: string[];
 	properties: Record<string, unknown>;
 	computedFormulas: Record<string, unknown>;

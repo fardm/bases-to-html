@@ -758,21 +758,28 @@ export function computeViewSummaries(
 		return undefined;
 	}
 
-	// Filter items belonging to this view based on view.filters
+	// Filter items belonging to this view based on baseConfig.filters and view.filters
 	const viewItems = allItems.filter((item) => {
-		if (!view.filters) return true;
+		if (!baseConfig.filters && !view.filters) return true;
 		const ctx: EvaluationContext = {
 			file: {
 				name: item.title,
 				path: item.path,
 				folder: item.folder,
+				ext: item.ext,
+				ctime: item.ctime,
+				mtime: item.mtime,
+				size: item.size,
+				links: item.links,
 				tags: item.tags,
 			},
 			properties: item.properties,
 			formulas: baseConfig.formulas,
 			computedFormulas: item.computedFormulas,
 		};
-		return evaluateFilter(view.filters, ctx);
+		const basePasses = !baseConfig.filters || evaluateFilter(baseConfig.filters, ctx);
+		const viewPasses = !view.filters || evaluateFilter(view.filters, ctx);
+		return basePasses && viewPasses;
 	});
 
 	// Compute grand summaries

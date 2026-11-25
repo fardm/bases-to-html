@@ -135,6 +135,7 @@ export class HtmlBuilder {
       base: {
         id: baseConfig.id,
         title: baseConfig.fileName,
+        filters: baseConfig.filters,
         formulas: baseConfig.formulas,
         summaries: baseConfig.summaries || {},
         views: baseConfig.views,
@@ -236,10 +237,13 @@ export class HtmlBuilder {
             <span>Filter</span>
             <span id="filterCountBadge" class="toolbar-btn-badge" style="display:none;">0</span>
           </button>
-          <div id="filterPopover" class="bases-popover popover-align-left" style="min-width: 440px;">
+          <div id="filterPopover" class="bases-popover popover-align-left" style="min-width: 460px;">
             <div class="popover-header">Filter</div>
             <div id="filterRulesList" class="popover-rules-list"></div>
-            <button id="addFilterBtn" class="popover-add-btn">${renderIconSvg('plus', 'b2h-icon-xs')} Add filter</button>
+            <div class="popover-add-actions">
+              <button id="addFilterBtn" class="popover-add-btn">${renderIconSvg('plus', 'b2h-icon-xs')} Add filter</button>
+              <button id="addFilterGroupBtn" class="popover-add-btn">${renderIconSvg('plus', 'b2h-icon-xs')} Add filter group</button>
+            </div>
           </div>
         </div>
 
