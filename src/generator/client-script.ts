@@ -449,12 +449,17 @@ export function getClientScript(): string {
     function parseItem(item) {
       if (typeof item === 'string') {
         var str = item.trim();
+        var isNegated = false;
+        if (str.startsWith('!')) {
+          isNegated = true;
+          str = str.slice(1).trim();
+        }
         var tagMatch = str.match(/^file\\.hasTag\\(["']?(.*?)["']?\\)$/);
         if (tagMatch) {
           rules.push({
             conjunction: rules.length === 0 ? 'where' : 'and',
             property: 'file.tags',
-            operator: 'has_tag',
+            operator: isNegated ? 'does_not_contain' : 'has_tag',
             value: tagMatch[1].replace(/^#/, '')
           });
           return;
@@ -469,7 +474,7 @@ export function getClientScript(): string {
           rules.push({
             conjunction: rules.length === 0 ? 'where' : 'and',
             property: propName,
-            operator: isTag ? 'has_tag' : 'contains',
+            operator: isNegated ? 'does_not_contain' : (isTag ? 'has_tag' : 'contains'),
             value: isTag ? contVal.replace(/^#/, '') : contVal
           });
           return;
@@ -601,6 +606,7 @@ export function getClientScript(): string {
     var clean = propPath.trim();
     if (clean === 'file.name' || clean === 'name' || clean === 'file') return item.title;
     if (clean === 'file.path') return item.path;
+    if (clean === 'file.folder' || clean === 'folder') return item.folder;
     if (clean === 'file.tags' || clean === 'file.tag') {
       if (item.tags && Array.isArray(item.tags)) return item.tags;
       if (item.properties && item.properties.tags) {
@@ -1379,7 +1385,7 @@ export function getClientScript(): string {
         grpHeader.innerHTML = '<span class="group-title bases-group-title">' + escapeHtml(grpKey) + '</span><span class="group-count bases-group-count">' + grpItems.length + '</span>';
         grpSection.appendChild(grpHeader);
 
-        var tableWrapper = createTableElement(grpItems, cols, colSizes, viewSummaries, true);
+        var tableWrapper = createTableElement(grpItems, cols, colSizes, viewSummaries, true, grpKey);
         grpSection.appendChild(tableWrapper);
 
         container.appendChild(grpSection);
@@ -1402,7 +1408,7 @@ export function getClientScript(): string {
     }
   }
 
-  function createTableElement(itemsList, cols, colSizes, viewSummaries, isGrouped) {
+  function createTableElement(itemsList, cols, colSizes, viewSummaries, isGrouped, groupKey) {
     var wrapper = document.createElement('div');
     wrapper.className = 'bases-table-wrapper';
 
@@ -1552,7 +1558,7 @@ export function getClientScript(): string {
 
     // 3. Table Footer (tfoot) - Computed Summarize Row
     if (hasAnySummaries(cols, viewSummaries)) {
-      var tfoot = createTableSummaryFoot(itemsList, cols, colSizes, viewSummaries, isGrouped ? 'Group Summary' : null);
+      var tfoot = createTableSummaryFoot(itemsList, cols, colSizes, viewSummaries, isGrouped ? 'Group Summary' : null, groupKey);
       table.appendChild(tfoot);
     }
 
@@ -1576,7 +1582,7 @@ export function getClientScript(): string {
     return null;
   }
 
-  function createTableSummaryFoot(itemsList, cols, colSizes, viewSummaries, groupLabel) {
+  function createTableSummaryFoot(itemsList, cols, colSizes, viewSummaries, groupLabel, groupKey) {
     var tfoot = document.createElement('tfoot');
     tfoot.className = 'bases-tfoot';
 
@@ -1596,18 +1602,37 @@ export function getClientScript(): string {
 
       var rule = getColumnSummaryRule(col, viewSummaries);
       if (rule) {
-        var summaryResult = calculateSummary(rule, col, itemsList);
+        var summaryResult = null;
+        var view = base.views[currentViewIdx];
+        if (view && view.staticSummaries) {
+          var cleanCol = col.replace(/^formula[.]/, '').replace(/^note[.]/, '');
+          if (groupLabel && groupKey && view.staticSummaries.groups && view.staticSummaries.groups[groupKey]) {
+            var grpDict = view.staticSummaries.groups[groupKey];
+            summaryResult = grpDict[col] || grpDict[cleanCol];
+          } else if (!groupLabel || groupLabel === 'Grand Total') {
+            if (view.staticSummaries.grand) {
+              summaryResult = view.staticSummaries.grand[col] || view.staticSummaries.grand[cleanCol];
+            }
+          }
+        }
+        if (!summaryResult) {
+          summaryResult = calculateSummary(rule, col, itemsList);
+        }
+
         var content = document.createElement('div');
         content.className = 'summary-content';
 
-        var labelSpan = document.createElement('span');
-        labelSpan.className = 'summary-type-label';
-        labelSpan.textContent = summaryResult.label;
-        content.appendChild(labelSpan);
+        if (summaryResult.label) {
+          var labelSpan = document.createElement('span');
+          labelSpan.className = 'summary-type-label';
+          labelSpan.textContent = summaryResult.label;
+          content.appendChild(labelSpan);
+        }
 
         var valSpan = document.createElement('span');
         valSpan.className = 'summary-result-value';
-        valSpan.textContent = String(summaryResult.value);
+        valSpan.textContent = String(summaryResult.value != null ? summaryResult.value : '-');
+        valSpan.setAttribute('dir', 'auto');
         content.appendChild(valSpan);
 
         td.appendChild(content);
@@ -1725,75 +1750,223 @@ export function getClientScript(): string {
 
     // 2. Custom formula evaluation
     try {
-      var customResult = evaluateCustomSummaryFormula(ruleStr, filledVals, numVals);
-      return { label: ruleStr.replace(/^values[.]/, ''), value: customResult };
+      var customResult = evaluateCustomSummaryFormula(ruleStr, rawVals);
+      return { label: '', value: customResult };
     } catch (e) {
       console.warn('Failed to evaluate custom summary formula:', ruleStr, e);
-      return { label: 'Summary', value: '-' };
+      return { label: '', value: '-' };
     }
   }
 
-  function evaluateCustomSummaryFormula(formula, filledVals, numVals) {
-    var rawValues = filledVals.slice();
-    var numbers = numVals.slice();
-
-    function ValuesWrapper(arr, nums) {
-      this.items = arr;
-      this.nums = nums;
+  function evaluateCustomSummaryFormula(formula, rawVals) {
+    var calls = splitPipelineCalls(formula.trim());
+    if (calls.length === 0 || calls[0] !== 'values') {
+      return '-';
     }
 
-    ValuesWrapper.prototype.sum = function() {
-      var s = this.nums.reduce(function(a, b) { return a + b; }, 0);
-      return Number.isInteger(s) ? s : Math.round(s * 100) / 100;
-    };
+    var current = rawVals.slice();
 
-    ValuesWrapper.prototype.mean = function() {
-      if (this.nums.length === 0) return 0;
-      var s = this.nums.reduce(function(a, b) { return a + b; }, 0);
-      return s / this.nums.length;
-    };
+    for (var i = 1; i < calls.length; i++) {
+      var callStr = calls[i];
+      if (!callStr) continue;
+      var match = callStr.match(/^(\\w+)(?:\\((.*)\\))?$/);
+      if (!match) continue;
 
-    ValuesWrapper.prototype.avg = function() {
-      return this.mean();
-    };
+      var methodName = match[1];
+      var argStr = match[2] !== undefined ? match[2] : '';
 
-    ValuesWrapper.prototype.median = function() {
-      if (this.nums.length === 0) return 0;
-      var sorted = this.nums.slice().sort(function(a, b) { return a - b; });
-      var mid = Math.floor(sorted.length / 2);
-      return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-    };
-
-    ValuesWrapper.prototype.min = function() {
-      return this.nums.length > 0 ? Math.min.apply(null, this.nums) : 0;
-    };
-
-    ValuesWrapper.prototype.max = function() {
-      return this.nums.length > 0 ? Math.max.apply(null, this.nums) : 0;
-    };
-
-    ValuesWrapper.prototype.count = function() {
-      return this.items.length;
-    };
-
-    ValuesWrapper.prototype.unique = function() {
-      var set = new Set(this.items.map(String));
-      return set.size;
-    };
-
-    Number.prototype.round = function(decimals) {
-      var factor = Math.pow(10, decimals || 0);
-      return Math.round(this * factor) / factor;
-    };
-
-    var values = new ValuesWrapper(rawValues, numbers);
-    var safeEvaluator = new Function('values', 'return (' + formula + ');');
-    var res = safeEvaluator(values);
-
-    if (typeof res === 'number') {
-      return Number.isInteger(res) ? res : Math.round(res * 100) / 100;
+      if (methodName === 'flat') {
+        var flattened = [];
+        for (var j = 0; j < current.length; j++) {
+          var item = current[j];
+          if (Array.isArray(item)) {
+            for (var k = 0; k < item.length; k++) {
+              if (item[k] !== null && item[k] !== undefined && item[k] !== '') flattened.push(item[k]);
+            }
+          } else if (item !== null && item !== undefined && item !== '') {
+            flattened.push(item);
+          }
+        }
+        current = flattened;
+      } else if (methodName === 'unique') {
+        var seen = new Set();
+        current = current.filter(function(x) {
+          var s = String(x);
+          if (seen.has(s)) return false;
+          seen.add(s);
+          return true;
+        });
+      } else if (methodName === 'filter') {
+        var predExpr = argStr.trim();
+        current = current.filter(function(it) {
+          return Boolean(evaluateSummaryItemExpression(predExpr, it));
+        });
+      } else if (methodName === 'map') {
+        var mapExpr = argStr.trim();
+        current = current.map(function(it) {
+          return evaluateSummaryItemExpression(mapExpr, it);
+        }).filter(function(x) {
+          return x !== null && x !== undefined && x !== '';
+        });
+      } else if (methodName === 'count') {
+        return current.length;
+      } else if (methodName === 'sum') {
+        var sumVal = current.map(Number).filter(function(n) { return !isNaN(n); }).reduce(function(a, b) { return a + b; }, 0);
+        return Number.isInteger(sumVal) ? sumVal : Math.round(sumVal * 100) / 100;
+      } else if (methodName === 'mean' || methodName === 'avg') {
+        var nums = current.map(Number).filter(function(n) { return !isNaN(n); });
+        if (nums.length === 0) return 0;
+        var avgVal = nums.reduce(function(a, b) { return a + b; }, 0) / nums.length;
+        return Math.round(avgVal * 100) / 100;
+      } else if (methodName === 'min') {
+        var minNums = current.map(Number).filter(function(n) { return !isNaN(n); });
+        return minNums.length > 0 ? Math.min.apply(null, minNums) : 0;
+      } else if (methodName === 'max') {
+        var maxNums = current.map(Number).filter(function(n) { return !isNaN(n); });
+        return maxNums.length > 0 ? Math.max.apply(null, maxNums) : 0;
+      } else if (methodName === 'join') {
+        var sep = argStr.replace(/^["']/, '').replace(/["']$/, '') || ', ';
+        return current.join(sep);
+      }
     }
-    return res !== undefined && res !== null ? String(res) : '-';
+
+    if (Array.isArray(current)) {
+      return current.join(' ');
+    }
+    if (typeof current === 'number' || typeof current === 'boolean') {
+      return current;
+    }
+    return String(current != null ? current : '-');
+  }
+
+  function evaluateSummaryItemExpression(rawExpr, itemValue) {
+    var expr = rawExpr.trim();
+    if (!expr) return null;
+
+    if (expr.startsWith('if(') && expr.endsWith(')')) {
+      var inner = expr.slice(3, -1);
+      var args = splitTopLevelCommas(inner);
+      if (args.length >= 2) {
+        var cond = evaluateSummaryItemExpression(args[0] || '', itemValue);
+        if (Boolean(cond)) {
+          return evaluateSummaryItemExpression(args[1] || '', itemValue);
+        } else if (args[2]) {
+          return evaluateSummaryItemExpression(args[2], itemValue);
+        }
+        return null;
+      }
+    }
+
+    var opMatch = findTopLevelComparison(expr);
+    if (opMatch) {
+      var left = evaluateSummaryItemExpression(opMatch.left, itemValue);
+      var right = evaluateSummaryItemExpression(opMatch.right, itemValue);
+      switch (opMatch.op) {
+        case '==': return String(left) === String(right);
+        case '!=': return String(left) !== String(right);
+        case '>=': return Number(left) >= Number(right);
+        case '<=': return Number(left) <= Number(right);
+        case '>': return Number(left) > Number(right);
+        case '<': return Number(left) < Number(right);
+      }
+    }
+
+    var replaceMatch = expr.match(/^value\\.replace\\((.*)\\)$/);
+    if (replaceMatch) {
+      var repArgs = splitTopLevelCommas(replaceMatch[1] || '');
+      var pattern = (repArgs[0] || '').trim();
+      var replacement = (repArgs[1] || '').trim().replace(/^["']/, '').replace(/["']$/, '');
+      var str = String(itemValue != null ? itemValue : '');
+
+      var regexMatch = pattern.match(/^\\/(.*)\\/([gimsuy]*)$/);
+      if (regexMatch) {
+        try {
+          var reg = new RegExp(regexMatch[1] || '', regexMatch[2]);
+          return str.replace(reg, replacement);
+        } catch (e) {
+          return str;
+        }
+      } else {
+        pattern = pattern.replace(/^["']/, '').replace(/["']$/, '');
+        return str.replace(pattern, replacement);
+      }
+    }
+
+    var arrayContainsMatch = expr.match(/^(\\[.*\\])\\.(?:contains|includes)\\((.*)\\)$/);
+    if (arrayContainsMatch) {
+      var arrayLiteralStr = arrayContainsMatch[1] || '';
+      var innerArg = (arrayContainsMatch[2] || '').trim();
+      var valToFind = innerArg === 'value' ? itemValue : evaluateSummaryItemExpression(innerArg, itemValue);
+
+      try {
+        var parsedArray = JSON.parse(arrayLiteralStr.replace(/'/g, '"'));
+        var cleanFind = String(valToFind != null ? valToFind : '').toLowerCase().replace(/^#/, '');
+        return parsedArray.some(function(x) {
+          return String(x).toLowerCase().replace(/^#/, '') === cleanFind;
+        });
+      } catch (e) {
+        return false;
+      }
+    }
+
+    if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
+      return expr.slice(1, -1);
+    }
+
+    if (!isNaN(Number(expr)) && expr !== '') {
+      return Number(expr);
+    }
+
+    if (expr === 'true') return true;
+    if (expr === 'false') return false;
+    if (expr === 'null' || expr === 'undefined') return null;
+
+    if (expr === 'value') {
+      return itemValue;
+    }
+
+    return expr;
+  }
+
+  function splitPipelineCalls(expr) {
+    var calls = [];
+    var depth = 0;
+    var inQuote = null;
+    var current = '';
+
+    for (var i = 0; i < expr.length; i++) {
+      var char = expr[i];
+      if (inQuote) {
+        current += char;
+        if (char === inQuote && expr[i - 1] !== '\\\\') {
+          inQuote = null;
+        }
+        continue;
+      }
+      if (char === '"' || char === "'") {
+        inQuote = char;
+        current += char;
+        continue;
+      }
+      if (char === '(' || char === '[' || char === '{') {
+        depth++;
+        current += char;
+        continue;
+      }
+      if (char === ')' || char === ']' || char === '}') {
+        depth--;
+        current += char;
+        continue;
+      }
+      if (char === '.' && depth === 0) {
+        if (current.trim()) calls.push(current.trim());
+        current = '';
+        continue;
+      }
+      current += char;
+    }
+    if (current.trim()) calls.push(current.trim());
+    return calls;
   }
 
   function getColumnWidth(col, colSizes) {

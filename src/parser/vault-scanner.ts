@@ -22,6 +22,7 @@ import {
 	toSafeString,
 } from './expression-evaluator';
 import { getPropertyIconName } from '../generator/icons';
+import { computeViewSummaries } from './summary-evaluator';
 
 export interface ScannedVaultData {
 	baseConfig: BaseFileConfig;
@@ -223,6 +224,13 @@ export class VaultScanner {
 					type: 'text',
 					icon: 'calculator',
 				};
+			}
+		}
+
+		// Compute static summaries for each view at export time
+		for (const view of baseConfig.views) {
+			if (view.summaries && Object.keys(view.summaries).length > 0) {
+				view.staticSummaries = computeViewSummaries(view, items, baseConfig);
 			}
 		}
 

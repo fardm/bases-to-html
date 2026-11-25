@@ -40,6 +40,12 @@ export function evaluateFilter(
 		if (obj.or && Array.isArray(obj.or)) {
 			return obj.or.some((item) => evaluateFilter(item, context));
 		}
+		if (obj.not) {
+			if (Array.isArray(obj.not)) {
+				return !obj.not.some((item) => evaluateFilter(item, context));
+			}
+			return !evaluateFilter(obj.not, context);
+		}
 	}
 
 	return true;
@@ -114,9 +120,13 @@ export function resolvePropertyPath(
 }
 
 function evaluateBooleanExpression(
-	expr: string,
+	rawExpr: string,
 	context: EvaluationContext,
 ): boolean {
+	const expr = rawExpr.trim();
+	if (expr.startsWith('!')) {
+		return !evaluateBooleanExpression(expr.slice(1), context);
+	}
 	const val = evaluateExpression(expr, context);
 	return Boolean(val);
 }

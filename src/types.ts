@@ -37,6 +37,16 @@ export interface FilterRule {
 	value: unknown;
 }
 
+export interface SummaryResult {
+	label: string;
+	value: string | number | boolean;
+}
+
+export interface ViewStaticSummaries {
+	grand: Record<string, SummaryResult>;
+	groups?: Record<string, Record<string, SummaryResult>>;
+}
+
 export interface BaseViewConfig {
 	id: string;
 	type: string;
@@ -51,6 +61,7 @@ export interface BaseViewConfig {
 	imageFit?: string;
 	columnSize?: Record<string, number>;
 	summaries?: Record<string, string>;
+	staticSummaries?: ViewStaticSummaries;
 	[key: string]: unknown;
 }
 
