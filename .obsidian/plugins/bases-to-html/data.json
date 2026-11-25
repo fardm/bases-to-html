@@ -1,0 +1,20 @@
+{
+  "exportPreferences": {
+    "documentTitle": "Archive",
+    "exportFormat": "multi",
+    "exportedData": "all",
+    "exportScope": "full",
+    "fontMode": "google",
+    "googleFontName": "Vazirmatn",
+    "localFontPath": "",
+    "localFontName": "",
+    "customCssText": "",
+    "customCssVaultPaths": [
+      "Bases-Style-for-Archive.css"
+    ],
+    "outputMode": "vault",
+    "vaultOutputFolder": "export",
+    "localOutputFolder": "",
+    "openExportedFiles": true
+  }
+}

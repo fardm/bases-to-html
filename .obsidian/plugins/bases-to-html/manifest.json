@@ -1,11 +1,11 @@
 {
 	"id": "bases-to-html",
 	"name": "Bases to HTML",
-	"version": "1.0.0",
+	"version": "1.1.1",
 	"minAppVersion": "1.4.0",
-	"description": "Export Obsidian Bases views to standalone, interactive, and responsive HTML pages for static hosting.",
+	"description": "Export Bases views to standalone, interactive, and responsive HTML pages for static hosting.",
 	"author": "iFard",
-	"authorUrl": "https://github.com/fardm/bases-to-html",
+	"authorUrl": "https://github.com/fardm",
 	"fundingUrl": "",
 	"isDesktopOnly": false
 }

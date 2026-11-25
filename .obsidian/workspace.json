@@ -14,9 +14,9 @@
               "type": "bases",
               "state": {
                 "file": "archive.base",
-                "viewName": "👁️ oveview"
+                "viewName": "📚 Books"
               },
-              "icon": "lucide-table",
+              "icon": "lucide-layout-grid",
               "title": "archive"
             }
           },
@@ -202,19 +202,26 @@
       "bases-to-html:Export to HTML": false
     }
   },
-  "active": "05776bd8c87b8b3e",
+  "active": "222ba6c660726e7a",
   "lastOpenFiles": [
-    "My archive/assets/images/12-angry-men-171lx0.webp",
-    "My archive/assets/images/12-years-a-slave-jjt48a.webp",
-    "My archive/assets/images/2001-a-space-odyssey-5esax1.webp",
-    "My archive/assets/images/310-to-yuma-8xkow5.webp",
-    "My archive/assets/images/a-beautiful-mind-kw6md4.webp",
-    "My archive/assets/images/close-up-7j3k7y.webp",
-    "My archive/assets/images/coda-yna2tz.webp",
-    "My archive/assets/images/dead-poets-society-jvgl7f.webp",
-    "My archive/assets/images/forrest-gump-dvvvsf.webp",
-    "My archive/assets/images/fury-inom5g.webp",
-    "My archive/assets/images/gone-girl-2shpd4.webp",
+    "export/assets/images/jnayt-w-mkafat-9uzb0x.webp",
+    "export/assets/images/nym-dang-pywng-yang-nwbk35.webp",
+    "export/assets/images/mjmwah-aathar-chkhwf-jld-chharm-uetd63.webp",
+    "export/assets/images/yadgyry-yadgyry-hpkjqd.webp",
+    "export/assets/images/atwprtrh-jcpn4i.webp",
+    "export/assets/images/farhang-goftari-87j4u4.webp",
+    "notes/فرهنگ گفتاری.md",
+    "archive.base",
+    "cover/farhang-goftari.webp",
+    "notes/اتوپرتره.md",
+    "cover/atwprtrh.webp",
+    "notes/جنایت و مکافات.md",
+    "cover/jnayt-w-mkafat.webp",
+    "cover/yadgyry-yadgyry.webp",
+    "notes/یادگیری یادگیری.md",
+    "cover/mjmwah-aathar-chkhwf-jld-chharm.webp",
+    "notes/مجموعه آثار چخوف (جلد چهارم).md",
+    "notes/نیم دانگ پیونگ یانگ.md",
     "My archive/assets/images",
     "My archive/index.html",
     "My archive/assets/js/app.js",
@@ -224,7 +231,6 @@
     "My archive/assets",
     "My archive",
     "notes/Interstellar.md",
-    "archive.base",
     "notes/Hugo.md",
     "notes/Hit Man.md",
     "notes/Heroic Losers.md",

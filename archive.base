@@ -39,25 +39,6 @@ formulas:
   Untitled: ""
 views:
   - type: cards
-    name: 📚 Books
-    filters:
-      and:
-        - file.hasTag("Book")
-    groupBy:
-      property: language
-      direction: DESC
-    order:
-      - file.name
-      - pages
-      - formula.starRating
-    sort:
-      - property: rating
-        direction: DESC
-    image: note.cover
-    cardSize: 180
-    imageAspectRatio: 1.5
-    imageFit: ""
-  - type: cards
     name: 🎬 Movies
     filters:
       and:
@@ -73,6 +54,39 @@ views:
     cardSize: 180
     imageAspectRatio: 1.5
     imageFit: ""
+  - type: cards
+    name: 📚 Books
+    filters:
+      and:
+        - file.hasTag("Book")
+        - '!file.name.contains("travels")'
+    groupBy:
+      property: language
+      direction: ASC
+    order:
+      - file.name
+      - pages
+      - formula.starRating
+    sort:
+      - property: rating
+        direction: DESC
+    image: note.cover
+    cardSize: 180
+    imageAspectRatio: 1.5
+    imageFit: ""
+  - type: table
+    name: Table
+    filters:
+      and:
+        - "!file.tags.isEmpty()"
+    groupBy:
+      property: tags
+      direction: ASC
+    order:
+      - file.name
+      - rating
+      - date
+      - badge
   - type: table
     name: 👁️ oveview
     groupBy:
@@ -97,16 +111,3 @@ views:
     columnSize:
       note.length: 191
       note.pages: 99
-  - type: table
-    name: Table
-    filters:
-      and:
-        - "!file.tags.isEmpty()"
-    groupBy:
-      property: tags
-      direction: ASC
-    order:
-      - file.name
-      - rating
-      - date
-      - badge
