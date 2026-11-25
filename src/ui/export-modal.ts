@@ -217,7 +217,7 @@ export class ExportModal extends Modal {
 				dropdownMenu.hide();
 			}
 		};
-		document.addEventListener('click', this.documentClickHandler);
+		activeDocument.addEventListener('click', this.documentClickHandler);
 
 		renderSelectedList();
 
@@ -526,7 +526,7 @@ export class ExportModal extends Modal {
 
 	onClose() {
 		if (this.documentClickHandler) {
-			document.removeEventListener('click', this.documentClickHandler);
+			activeDocument.removeEventListener('click', this.documentClickHandler);
 			this.documentClickHandler = undefined;
 		}
 		const { contentEl } = this;
