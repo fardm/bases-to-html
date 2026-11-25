@@ -11,6 +11,7 @@ import {
 	LocalFontConfig,
 	OutputStorageMode,
 } from '../types';
+import { renderExportFormatRadioGroup } from './export-format-radio';
 import { renderExportedDataRadioGroup } from './exported-data-radio';
 import { renderNoteContentRadioGroup } from './note-content-radio';
 
@@ -73,8 +74,8 @@ export class ExportModal extends Modal {
 		this.exportFormat = prefs.exportFormat === 'multi' ? 'multi' : 'single';
 		this.exportScope =
 			prefs.exportScope === 'bases-only' ||
-			prefs.exportScope === 'properties-only' ||
-			prefs.exportScope === 'full'
+				prefs.exportScope === 'properties-only' ||
+				prefs.exportScope === 'full'
 				? prefs.exportScope
 				: 'full';
 		this.exportedData = prefs.exportedData === 'filtered' ? 'filtered' : 'all';
@@ -287,21 +288,15 @@ export class ExportModal extends Modal {
 
 		renderSelectedList();
 
-		// 3.3 Export format
-		new Setting(contentEl)
-			.setName('Export format')
-			.setDesc(
-				'Single page embeds scripts, styles, and images. Multi-file generates a structured directory.',
-			)
-			.addDropdown((drop) =>
-				drop
-					.addOption('single', 'Single page (embedded)')
-					.addOption('multi', 'Multi-file (folder with assets)')
-					.setValue(this.exportFormat)
-					.onChange((val) => {
-						this.exportFormat = val as ExportFormat;
-					}),
-			);
+		// 3.3 Export format (Radio Group)
+		renderExportFormatRadioGroup(
+			contentEl,
+			this.exportFormat,
+			(val) => {
+				this.exportFormat = val;
+			},
+			'exportModalExportFormat',
+		);
 
 		// 3.4 Exported Data Section (Radio Group)
 		renderExportedDataRadioGroup(
