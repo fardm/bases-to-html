@@ -1,4 +1,4 @@
-import { App, Modal, Notice, PluginSettingTab, Setting } from 'obsidian';
+import { App, Modal, Notice, PluginSettingTab, Setting, SettingDefinitionItem } from 'obsidian';
 import type BasesToHtmlPlugin from './main';
 import { ExportFormat, ExportScope, ExportedDataScope, FontMode, OutputStorageMode } from './types';
 
@@ -98,22 +98,38 @@ export class BasesToHtmlSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		return [
+			{
+				name: 'Reset Export Preferences',
+				desc: "Clear your saved export preferences and restore the default settings. This won't delete any exported files.",
+				render: (setting) => {
+					this.configureResetButton(setting);
+				},
+			},
+		];
+	}
+
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl)
+		const setting = new Setting(containerEl)
 			.setName('Reset Export Preferences')
-			.setDesc("Clear your saved export preferences and restore the default settings. This won't delete any exported files.")
-			.addButton((btn) => {
-				btn.setButtonText('Reset');
-				btn.buttonEl.addClass('mod-warning');
-				btn.onClick(() => {
-					new ConfirmResetModal(this.app, async () => {
-						await this.plugin.resetExportPreferences();
-						new Notice('Export preferences have been reset to defaults.');
-					}).open();
-				});
+			.setDesc("Clear your saved export preferences and restore the default settings. This won't delete any exported files.");
+		this.configureResetButton(setting);
+	}
+
+	private configureResetButton(setting: Setting): void {
+		setting.addButton((btn) => {
+			btn.setButtonText('Reset');
+			btn.buttonEl.addClass('mod-warning');
+			btn.onClick(() => {
+				new ConfirmResetModal(this.app, async () => {
+					await this.plugin.resetExportPreferences();
+					new Notice('Export preferences have been reset to defaults.');
+				}).open();
 			});
+		});
 	}
 }
