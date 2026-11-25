@@ -23,10 +23,22 @@ Currently, the plugin supports two primary Bases views:
   - **Dynamic Filtering:** Add, toggle, or adjust multi-criteria filters on the fly.
   - **Grouping:** Group records by any property with live section counters.
   - **Sorting:** Multi-column ascending and descending sorting.
+- **Local Storage State Persistence:** User modifications made in the web interface — including active filters, grouping, sorting rules, active view, theme mode (dark/light), and page width preferences — are automatically saved in the browser's `localStorage` and preserved across visits and reloads.
+- **Semantic & Unique CSS Architecture:** Built with clean, unique, and predictable class names (e.g. `.bases-card`, `.bases-card-badges`, `.card-prop-item`, `.bases-td`) along with `data-property="..."` attributes, allowing you to easily target elements and apply custom styles.
 - **Bases Fidelity:** Preserves multi-view configurations with a view switcher dropdown, custom column formulas, tags, independent capsule badges, and summary aggregations.
 - **Note Detail Modals:** Clickable cards and rows open detailed popups showcasing note properties and rendered Markdown content.
-- **Responsive & Modern UI:** Automatic dark/light theme switching, adjustable page width (Full, Normal, Narrow), and Google Fonts integration with persistence via browser `localStorage`.
+- **Responsive & Modern UI:** Automatic dark/light theme switching, adjustable page width (Full, Normal, Narrow), and Google Fonts integration (Vazirmatn & Inter).
 - **Zero External Runtime Dependencies:** Pure vanilla JavaScript ensuring high performance and lightweight exports.
+
+---
+
+## Custom Styling & Showcase
+
+Thanks to the modular, class-rich HTML structure, you can completely restyle the exported output to match your personal aesthetic.
+
+Check out [**Bases-Style-for-Archive.css**](https://github.com/fardm/bases-to-html/blob/vault/Bases-Style-for-Archive.css) for a real-world example featuring:
+- Realistic 3D hardcover book spines and covers.
+- Custom styled overview cards and glowing metadata badges.
 
 ---
 
