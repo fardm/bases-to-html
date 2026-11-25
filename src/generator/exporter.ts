@@ -91,18 +91,17 @@ export class Exporter {
 		};
 		const htmlBuilder = new HtmlBuilder(resolvedOptions);
 
-		// Determine target directory path
-		const safeDocTitle = sanitizeFolderName(options.documentTitle || 'Bases Export');
+		// Determine target directory path (save directly into selected output location)
 		const targetDir = isLocalMode && nodeMods
-			? nodeMods.path.join(options.outputLocation.trim(), safeDocTitle)
-			: normalizePath(
-					options.outputLocation
-						? `${normalizePath(options.outputLocation)}/${safeDocTitle}`
-						: safeDocTitle,
-				);
+			? options.outputLocation.trim()
+			: normalizePath(options.outputLocation?.trim() || '');
 
 		const joinOutputPath = (dir: string, rel: string): string =>
-			isLocalMode && nodeMods ? nodeMods.path.join(dir, rel) : normalizePath(`${dir}/${rel}`);
+			isLocalMode && nodeMods
+				? nodeMods.path.join(dir, rel)
+				: dir
+					? normalizePath(`${dir}/${rel}`)
+					: normalizePath(rel);
 
 		const getOutputParent = (fullPath: string): string =>
 			isLocalMode && nodeMods ? nodeMods.path.dirname(fullPath) : getParentDir(fullPath);
@@ -205,7 +204,7 @@ export class Exporter {
 			}
 		}
 
-		new Notice(`Bases exported successfully to:\n${targetDir}`);
+		new Notice(`Bases exported successfully to:\n${targetDir || 'Vault root'}`);
 
 		if (options.openExportedFiles && mainEntryPath) {
 			await this.openFile(mainEntryPath, isLocalMode);
@@ -308,14 +307,6 @@ export class Exporter {
 			}
 		}
 	}
-}
-
-function sanitizeFolderName(name: string): string {
-	return (
-		name
-			.replace(/[\\/:*?"<>|]+/g, '_')
-			.trim() || 'Export'
-	);
 }
 
 function getParentDir(path: string): string {
