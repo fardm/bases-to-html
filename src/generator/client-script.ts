@@ -2282,20 +2282,35 @@ export function getClientScript(): string {
       var val = getItemValue(item, prop);
       if (val === undefined || val === null || val === '') return;
 
-      if (prop === 'file.name' || prop === 'name') {
+      var cleanProp = prop.replace(/^formula\\./, '').replace(/^note\\./, '');
+
+      if (cleanProp === 'file.name' || cleanProp === 'name' || cleanProp === 'file') {
         var titleEl = document.createElement('div');
         titleEl.className = 'card-title bases-card-title';
         titleEl.textContent = String(val);
         titleEl.setAttribute('dir', 'auto');
         body.appendChild(titleEl);
         renderedTitle = true;
-      } else if (prop === 'badge' || prop === 'tags' || prop === 'file.tags') {
-        var badgeEl = document.createElement('div');
-        badgeEl.className = 'card-badge bases-card-badge';
-        badgeEl.textContent = Array.isArray(val) ? val.join(' ') : String(val);
-        badgeEl.setAttribute('dir', 'auto');
-        body.appendChild(badgeEl);
-      } else if (prop.includes('starRating') || (typeof val === 'string' && val.includes('★'))) {
+      } else if (cleanProp === 'badge' || cleanProp === 'badges' || cleanProp === 'tags' || cleanProp === 'tag' || cleanProp === 'file.tags' || cleanProp === 'file.tag') {
+        var badgesContainer = document.createElement('div');
+        badgesContainer.className = 'card-badges bases-card-badges';
+        badgesContainer.setAttribute('data-property', cleanProp);
+        badgesContainer.setAttribute('dir', 'auto');
+        var badgeList = Array.isArray(val) ? val : [val];
+        badgeList.forEach(function(b) {
+          if (b === undefined || b === null) return;
+          var str = String(b).trim();
+          if (!str) return;
+          var badgeEl = document.createElement('span');
+          badgeEl.className = 'card-badge bases-card-badge';
+          badgeEl.textContent = str;
+          badgeEl.setAttribute('dir', 'auto');
+          badgesContainer.appendChild(badgeEl);
+        });
+        if (badgesContainer.children.length > 0) {
+          body.appendChild(badgesContainer);
+        }
+      } else if (cleanProp.includes('starRating') || (typeof val === 'string' && val.includes('★'))) {
         var starEl = document.createElement('div');
         starEl.className = 'card-rating bases-card-rating';
         starEl.textContent = String(val);
@@ -2303,10 +2318,9 @@ export function getClientScript(): string {
       } else {
         var row = document.createElement('div');
         row.className = 'card-prop-item bases-card-property';
-        var cleanKey = prop.replace(/^formula\\./, '').replace(/^note\\./, '');
-        row.setAttribute('data-property', cleanKey);
+        row.setAttribute('data-property', cleanProp);
         var displayVal = Array.isArray(val) ? val.join(', ') : String(val);
-        row.innerHTML = '<span class="card-prop-key bases-property-key">' + escapeHtml(cleanKey) + '</span><span class="card-prop-val bases-property-value" dir="auto">' + escapeHtml(displayVal) + '</span>';
+        row.innerHTML = '<span class="card-prop-key bases-property-key">' + escapeHtml(cleanProp) + '</span><span class="card-prop-val bases-property-value" dir="auto">' + escapeHtml(displayVal) + '</span>';
         body.appendChild(row);
       }
     });

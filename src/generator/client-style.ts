@@ -1,5 +1,5 @@
 export function getClientCss(customCss = ''): string {
-	return `/* Bases to HTML - Modern Responsive Stylesheet */
+  return `/* Bases to HTML - Modern Responsive Stylesheet */
 :root {
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
@@ -693,15 +693,28 @@ body {
   -webkit-box-orient: vertical;
 }
 
-.card-badge {
-  display: inline-block;
+.card-badges,
+.bases-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
   align-self: flex-start;
+  max-width: 100%;
+}
+
+.card-badge,
+.bases-card-badge {
+  display: inline-flex;
+  align-items: center;
   padding: 0.15rem 0.5rem;
   background-color: var(--accent-badge);
   color: var(--badge-text);
   border-radius: var(--radius-sm);
   font-size: 0.75rem;
   font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 .card-rating {
