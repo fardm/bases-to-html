@@ -30,7 +30,7 @@ export function getClientCss(customCss = ''): string {
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 14px;
-  --font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --container-max-width: 1280px;
   --card-size: 180px;
   --aspect-ratio: 1.5;

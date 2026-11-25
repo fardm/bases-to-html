@@ -2,6 +2,15 @@ export type ExportFormat = 'single' | 'multi';
 export type ExportScope = 'bases-only' | 'properties-only' | 'full';
 export type ExportedDataScope = 'all' | 'filtered';
 export type OutputStorageMode = 'vault' | 'local';
+export type FontMode = 'default' | 'google' | 'local';
+
+export interface LocalFontConfig {
+	fileName: string;
+	filePath?: string;
+	mimeType: string;
+	format: 'woff2' | 'woff' | 'truetype' | 'opentype';
+	data?: ArrayBuffer;
+}
 export type PageWidth = 'full' | 'normal' | 'narrow';
 export type ThemeMode = 'light' | 'dark';
 export type PropertyType = 'text' | 'number' | 'date' | 'checkbox' | 'list' | 'link';
@@ -105,7 +114,10 @@ export interface ExportOptions {
 	exportFormat: ExportFormat;
 	exportScope: ExportScope;
 	exportedData: ExportedDataScope;
+	fontMode?: FontMode;
 	font: string;
+	localFont?: LocalFontConfig;
+	resolvedFontCss?: string;
 	customCss: string;
 	outputLocation: string;
 	outputMode?: OutputStorageMode;

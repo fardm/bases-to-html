@@ -1,6 +1,7 @@
 import { BaseFileConfig, ExportOptions, NoteItem } from '../types';
 import { getClientScript } from './client-script';
 import { getClientCss } from './client-style';
+import { buildGoogleFontLink, getFontFamilyFromFileName } from './font-utils';
 import { getLucideSpriteSvg, renderIconSvg } from './icons';
 
 export interface GeneratedFile {
@@ -15,13 +16,42 @@ export class HtmlBuilder {
     this.options = options;
   }
 
+  private getCombinedCustomCss(): string {
+    return [this.options.resolvedFontCss || '', this.options.customCss || '']
+      .filter((c) => c && c.trim())
+      .join('\n\n');
+  }
+
+  private getInitialFontInfo(): { attrValue: string; label: string; linkHtml: string } {
+    const mode = this.options.fontMode || 'default';
+    if (mode === 'google' && this.options.font?.trim()) {
+      const name = this.options.font.trim();
+      return {
+        attrValue: 'custom',
+        label: name,
+        linkHtml: buildGoogleFontLink(name),
+      };
+    }
+    if (mode === 'local' && this.options.localFont) {
+      return {
+        attrValue: 'custom',
+        label: getFontFamilyFromFileName(this.options.localFont.fileName),
+        linkHtml: '',
+      };
+    }
+    return {
+      attrValue: 'system-sans',
+      label: 'Default (System Sans)',
+      linkHtml: '',
+    };
+  }
+
   buildSinglePage(
     baseConfig: BaseFileConfig,
     items: NoteItem[],
     rootHref = 'index.html',
   ): string {
-    const customCss = this.options.customCss || '';
-    const css = getClientCss(customCss);
+    const css = getClientCss(this.getCombinedCustomCss());
     const js = getClientScript();
 
     return this.generateBaseHtmlDocument({
@@ -41,7 +71,7 @@ export class HtmlBuilder {
     const isSingleBase = exportedBases.length === 1;
 
     // Shared CSS and JS
-    const globalCss = getClientCss(this.options.customCss || '');
+    const globalCss = getClientCss(this.getCombinedCustomCss());
     files.push({
       relativePath: 'assets/css/styles.css',
       content: globalCss,
@@ -146,9 +176,8 @@ export class HtmlBuilder {
       items,
     };
 
-    const fontLink = `<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">`;
+    const fontInfo = this.getInitialFontInfo();
+    const fontLink = fontInfo.linkHtml;
 
     const cssInclude = cssRef
       ? `<link rel="stylesheet" href="${cssRef}">`
@@ -172,7 +201,7 @@ export class HtmlBuilder {
     const initImageFit = firstView?.imageFit || 'cover';
 
     return `<!DOCTYPE html>
-<html lang="en" data-theme="dark" data-width="normal" data-font="${this.options.font || 'vazirmatn'}" style="--card-size: ${initCardSize}px; --aspect-ratio: ${initRawRatio}; --css-aspect-ratio: ${initCssRatio}; --image-fit: ${initImageFit};">
+<html lang="en" data-theme="dark" data-width="normal" data-font="${fontInfo.attrValue}" style="--card-size: ${initCardSize}px; --aspect-ratio: ${initRawRatio}; --css-aspect-ratio: ${initCssRatio}; --image-fit: ${initImageFit};">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -308,8 +337,7 @@ export class HtmlBuilder {
         <span class="setting-label">Font</span>
         <span class="setting-desc">Select typography style</span>
         <select id="fontSelect" class="font-select">
-          <option value="vazirmatn">Vazirmatn (Default)</option>
-          <option value="inter">Inter</option>
+          ${fontInfo.attrValue === 'custom' ? `<option value="custom">${escapeHtml(fontInfo.label)} (Exported)</option>` : ''}
           <option value="system-sans">System Sans-Serif</option>
           <option value="system-serif">System Serif</option>
         </select>
@@ -357,15 +385,12 @@ export class HtmlBuilder {
     isSinglePage = false,
   ): string {
     const title = this.options.documentTitle || 'Bases Archive';
-    const font = this.options.font || 'vazirmatn';
-    const customCss = this.options.customCss || '';
-
-    const fontLink = `<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">`;
+    const fontInfo = this.getInitialFontInfo();
+    const font = fontInfo.attrValue;
+    const fontLink = fontInfo.linkHtml;
 
     const cssInclude = isSinglePage
-      ? `<style>\n${getClientCss(customCss)}\n</style>`
+      ? `<style>\n${getClientCss(this.getCombinedCustomCss())}\n</style>`
       : `<link rel="stylesheet" href="./assets/css/styles.css">`;
 
     const initScript = `<script>

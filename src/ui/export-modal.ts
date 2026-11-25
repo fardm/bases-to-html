@@ -1,7 +1,16 @@
 import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile, TFolder, setIcon } from 'obsidian';
 import { Exporter } from '../generator/exporter';
+import { getFontFormatInfo } from '../generator/font-utils';
 import type BasesToHtmlPlugin from '../main';
-import { ExportFormat, ExportOptions, ExportScope, ExportedDataScope, OutputStorageMode } from '../types';
+import {
+	ExportFormat,
+	ExportOptions,
+	ExportScope,
+	ExportedDataScope,
+	FontMode,
+	LocalFontConfig,
+	OutputStorageMode,
+} from '../types';
 import { renderExportedDataRadioGroup } from './exported-data-radio';
 import { renderNoteContentRadioGroup } from './note-content-radio';
 
@@ -42,7 +51,9 @@ export class ExportModal extends Modal {
 	private exportFormat: ExportFormat;
 	private exportScope: ExportScope;
 	private exportedData: ExportedDataScope;
-	private font: string;
+	private fontMode: FontMode;
+	private googleFontName: string;
+	private localFont?: LocalFontConfig;
 	private selectedCssFiles: SelectedCssFile[] = [];
 	private customCssText: string;
 	private cssSource: string;
@@ -60,7 +71,19 @@ export class ExportModal extends Modal {
 		this.exportFormat = 'single';
 		this.exportScope = 'full';
 		this.exportedData = 'all';
-		this.font = 'vazirmatn';
+		this.fontMode = plugin.settings.fontMode || 'default';
+		this.googleFontName = plugin.settings.googleFontName || '';
+		if (plugin.settings.localFontPath && plugin.settings.localFontName) {
+			const fmt = getFontFormatInfo(plugin.settings.localFontName);
+			if (fmt) {
+				this.localFont = {
+					fileName: plugin.settings.localFontName,
+					filePath: plugin.settings.localFontPath,
+					mimeType: fmt.mimeType,
+					format: fmt.format,
+				};
+			}
+		}
 		this.selectedCssFiles = [];
 		this.customCssText = '';
 		this.cssSource = 'None';
@@ -263,21 +286,130 @@ export class ExportModal extends Modal {
 			'exportModalNoteContent',
 		);
 
-		// 3.6 Font selection
-		new Setting(contentEl)
-			.setName('Font')
-			.setDesc('Typography font loaded via Google fonts CDN in the HTML output.')
-			.addDropdown((drop) =>
-				drop
-					.addOption('vazirmatn', 'Vazirmatn (default / multilingual)')
-					.addOption('inter', 'Inter')
-					.addOption('system-sans', 'System sans-serif')
-					.addOption('system-serif', 'System serif')
-					.setValue(this.font)
-					.onChange((val) => {
-						this.font = val;
-					}),
+		// 3.6 Font selection (Default / Google Fonts / Local Font)
+		const fontSection = contentEl.createDiv({
+			cls: 'b2h-output-location-section',
+		});
+
+		const fontHeader = fontSection.createDiv({ cls: 'b2h-output-header' });
+		fontHeader.createDiv({ text: 'Font', cls: 'setting-item-name' });
+		fontHeader.createDiv({
+			text: 'Choose the typography for the exported HTML.',
+			cls: 'setting-item-description',
+		});
+
+		const fontModeRow = fontSection.createDiv({ cls: 'b2h-output-mode-toggle' });
+		const fontDefaultBtn = fontModeRow.createEl('button', {
+			text: 'Default',
+			cls: 'b2h-mode-btn',
+			attr: { type: 'button' },
+		});
+		const fontGoogleBtn = fontModeRow.createEl('button', {
+			text: 'Google Fonts',
+			cls: 'b2h-mode-btn',
+			attr: { type: 'button' },
+		});
+		const fontLocalBtn = fontModeRow.createEl('button', {
+			text: 'Local Font',
+			cls: 'b2h-mode-btn',
+			attr: { type: 'button' },
+		});
+
+		const fontDefaultPanel = fontSection.createDiv({ cls: 'b2h-output-panel' });
+		fontDefaultPanel.createDiv({
+			text: 'Uses the default system font without loading external font files.',
+			cls: 'setting-item-description',
+		});
+
+		const fontGooglePanel = fontSection.createDiv({ cls: 'b2h-output-panel' });
+		const googleFontInput = fontGooglePanel.createEl('input', {
+			type: 'text',
+			placeholder: 'Enter Google Font name (e.g. Vazirmatn, Roboto, Inter)...',
+			cls: 'b2h-base-search-input',
+		});
+		googleFontInput.value = this.googleFontName;
+		const googleFontPreview = fontGooglePanel.createDiv({
+			cls: 'setting-item-description',
+		});
+		const updateGooglePreview = () => {
+			const val = this.googleFontName.trim();
+			googleFontPreview.setText(
+				val ? `Selected font: ${val} (loaded via Google Fonts CDN)` : 'No Google Font specified yet.',
 			);
+		};
+		updateGooglePreview();
+		googleFontInput.addEventListener('input', () => {
+			this.googleFontName = googleFontInput.value;
+			updateGooglePreview();
+		});
+
+		const fontLocalPanel = fontSection.createDiv({ cls: 'b2h-output-panel' });
+		const localFontRow = fontLocalPanel.createDiv({ cls: 'b2h-local-path-row' });
+		const localFontDisplay = localFontRow.createEl('input', {
+			type: 'text',
+			placeholder: 'Select a font file (.woff2, .woff, .ttf, .otf)...',
+			cls: 'b2h-base-search-input',
+		});
+		localFontDisplay.readOnly = true;
+		localFontDisplay.value = this.localFont
+			? `${this.localFont.fileName} (${this.localFont.format.toUpperCase()})`
+			: '';
+
+		const localFontFileInput = localFontRow.createEl('input', {
+			type: 'file',
+			cls: 'b2h-hidden-input',
+		});
+		localFontFileInput.accept = '.woff2,.woff,.ttf,.otf';
+		localFontFileInput.addEventListener('change', () => {
+			const file = localFontFileInput.files?.[0];
+			if (!file) return;
+			const fmt = getFontFormatInfo(file.name);
+			if (!fmt) {
+				new Notice('Unsupported font format. Please choose WOFF2, WOFF, TTF, or OTF.');
+				return;
+			}
+			void file.arrayBuffer().then((buf) => {
+				this.localFont = {
+					fileName: file.name,
+					mimeType: fmt.mimeType,
+					format: fmt.format,
+					data: buf,
+				};
+				localFontDisplay.value = `${file.name} (${fmt.format.toUpperCase()})`;
+			});
+			localFontFileInput.value = '';
+		});
+
+		const browseFontBtn = localFontRow.createEl('button', {
+			text: 'Browse',
+			attr: { type: 'button' },
+		});
+		browseFontBtn.addEventListener('click', () => {
+			void this.pickLocalFont(localFontDisplay, localFontFileInput);
+		});
+
+		const updateFontModeUI = () => {
+			fontDefaultBtn.toggleClass('is-active', this.fontMode === 'default');
+			fontGoogleBtn.toggleClass('is-active', this.fontMode === 'google');
+			fontLocalBtn.toggleClass('is-active', this.fontMode === 'local');
+			fontDefaultPanel.toggle(this.fontMode === 'default');
+			fontGooglePanel.toggle(this.fontMode === 'google');
+			fontLocalPanel.toggle(this.fontMode === 'local');
+		};
+
+		fontDefaultBtn.addEventListener('click', () => {
+			this.fontMode = 'default';
+			updateFontModeUI();
+		});
+		fontGoogleBtn.addEventListener('click', () => {
+			this.fontMode = 'google';
+			updateFontModeUI();
+		});
+		fontLocalBtn.addEventListener('click', () => {
+			this.fontMode = 'local';
+			updateFontModeUI();
+		});
+		updateFontModeUI();
 
 		// 3.6 Custom CSS section
 		const customCssSection = contentEl.createDiv({
@@ -637,6 +769,68 @@ export class ExportModal extends Modal {
 		});
 	}
 
+	private async pickLocalFont(
+		localFontDisplay: HTMLInputElement,
+		fallbackFileInput: HTMLInputElement,
+	): Promise<void> {
+		try {
+			const electron = (
+				window as unknown as {
+					require?: (mod: string) => {
+						remote?: {
+							dialog?: {
+								showOpenDialog: (opts: {
+									title?: string;
+									filters?: Array<{ name: string; extensions: string[] }>;
+									properties: string[];
+								}) => Promise<{ canceled: boolean; filePaths: string[] }>;
+							};
+						};
+						dialog?: {
+							showOpenDialog: (opts: {
+								title?: string;
+								filters?: Array<{ name: string; extensions: string[] }>;
+								properties: string[];
+							}) => Promise<{ canceled: boolean; filePaths: string[] }>;
+						};
+					};
+				}
+			).require?.('electron');
+
+			const dialog = electron?.remote?.dialog ?? electron?.dialog;
+			if (dialog?.showOpenDialog) {
+				const result = await dialog.showOpenDialog({
+					title: 'Select font file',
+					filters: [
+						{ name: 'Font files', extensions: ['woff2', 'woff', 'ttf', 'otf'] },
+					],
+					properties: ['openFile'],
+				});
+				if (!result.canceled && result.filePaths[0]) {
+					const chosenPath = result.filePaths[0];
+					const fileName = chosenPath.split(/[\\/]/).pop() || chosenPath;
+					const fmt = getFontFormatInfo(fileName);
+					if (!fmt) {
+						new Notice('Unsupported font format. Please choose WOFF2, WOFF, TTF, or OTF.');
+						return;
+					}
+					this.localFont = {
+						fileName,
+						filePath: chosenPath,
+						mimeType: fmt.mimeType,
+						format: fmt.format,
+					};
+					localFontDisplay.value = `${fileName} (${fmt.format.toUpperCase()})`;
+				}
+				return;
+			}
+		} catch (err) {
+			console.error('Failed to open local font dialog:', err);
+		}
+
+		fallbackFileInput.click();
+	}
+
 	private async pickLocalDirectory(localPathInput: HTMLInputElement): Promise<void> {
 		try {
 			const electron = (
@@ -695,12 +889,26 @@ export class ExportModal extends Modal {
 			return;
 		}
 
+		if (this.fontMode === 'google' && !this.googleFontName.trim()) {
+			new Notice('Please enter a Google Font name or switch to Default.');
+			return;
+		}
+
+		if (this.fontMode === 'local' && !this.localFont) {
+			new Notice('Please select a local font file (.woff2, .woff, .ttf, .otf).');
+			return;
+		}
+
 		exportBtn.disabled = true;
 		exportBtn.setText('Exporting...');
 
 		this.plugin.settings.outputMode = this.outputMode;
 		this.plugin.settings.vaultOutputFolder = this.vaultOutputFolder;
 		this.plugin.settings.localOutputFolder = this.localOutputFolder;
+		this.plugin.settings.fontMode = this.fontMode;
+		this.plugin.settings.googleFontName = this.googleFontName.trim();
+		this.plugin.settings.localFontPath = this.localFont?.filePath || '';
+		this.plugin.settings.localFontName = this.localFont?.fileName || '';
 		await this.plugin.saveSettings();
 
 		const combinedCss = [
@@ -716,7 +924,9 @@ export class ExportModal extends Modal {
 			exportFormat: this.exportFormat,
 			exportScope: this.exportScope,
 			exportedData: this.exportedData,
-			font: this.font,
+			fontMode: this.fontMode,
+			font: this.fontMode === 'google' ? this.googleFontName.trim() : 'system-sans',
+			localFont: this.fontMode === 'local' ? this.localFont : undefined,
 			customCss: combinedCss,
 			outputLocation:
 				this.outputMode === 'local'

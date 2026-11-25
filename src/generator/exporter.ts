@@ -8,12 +8,14 @@ import {
 import { parseBaseFile } from '../parser/base-parser';
 import { ScannedVaultData, VaultScanner } from '../parser/vault-scanner';
 import { ExportOptions, NoteItem } from '../types';
+import { buildCustomFontCss } from './font-utils';
 import { HtmlBuilder, sanitizeSlug } from './html-builder';
 
 interface NodeFsModule {
 	promises: {
 		mkdir: (path: string, options: { recursive: boolean }) => Promise<void>;
 		writeFile: (path: string, data: string | Uint8Array, encoding?: string) => Promise<void>;
+		readFile?: (path: string) => Promise<Uint8Array>;
 	};
 }
 
@@ -52,7 +54,42 @@ export class Exporter {
 		new Notice('Exporting bases to HTML...');
 
 		const scanner = new VaultScanner(this.app, this.component);
-		const htmlBuilder = new HtmlBuilder(options);
+
+		// Resolve font (Default / Google Fonts / Local Font)
+		const fontMode = options.fontMode || 'default';
+		let localFontBuffer: ArrayBuffer | undefined;
+		if (fontMode === 'local' && options.localFont) {
+			if (options.localFont.data) {
+				localFontBuffer = options.localFont.data;
+			} else if (options.localFont.filePath) {
+				const fsMods = this.getNodeFileModules();
+				if (fsMods?.fs.promises.readFile) {
+					const bytes = await fsMods.fs.promises.readFile(options.localFont.filePath);
+					localFontBuffer = bytes.buffer.slice(
+						bytes.byteOffset,
+						bytes.byteOffset + bytes.byteLength,
+					) as ArrayBuffer;
+				}
+			}
+			if (!localFontBuffer) {
+				new Notice('Could not read the selected local font file.');
+				return null;
+			}
+		}
+
+		const fontCssResult = buildCustomFontCss({
+			fontMode,
+			googleFontName: options.font,
+			localFont: options.localFont,
+			exportFormat: options.exportFormat,
+			localFontBuffer,
+		});
+
+		const resolvedOptions: ExportOptions = {
+			...options,
+			resolvedFontCss: fontCssResult.css,
+		};
+		const htmlBuilder = new HtmlBuilder(resolvedOptions);
 
 		// Determine target directory path
 		const safeDocTitle = sanitizeFolderName(options.documentTitle || 'Bases Export');
@@ -157,6 +194,14 @@ export class Exporter {
 						console.error(`Failed to copy image ${imgTFile.path}:`, err);
 					}
 				}
+			}
+
+			// Copy local font file once into assets/fonts/ (no duplicates)
+			if (fontMode === 'local' && fontCssResult.fontAssetRelativePath && localFontBuffer) {
+				const targetFontPath = joinOutputPath(targetDir, fontCssResult.fontAssetRelativePath);
+				const fontDir = getOutputParent(targetFontPath);
+				if (fontDir) await this.ensureDirectory(fontDir, nodeMods);
+				await this.writeBinarySafe(targetFontPath, localFontBuffer, nodeMods);
 			}
 		}
 

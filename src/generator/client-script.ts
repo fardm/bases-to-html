@@ -24,7 +24,9 @@ export function getClientScript(): string {
   // Global settings state
   var currentTheme = localStorage.getItem('b2h_theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   var currentWidth = localStorage.getItem('b2h_width') || 'normal';
-  var currentFont = localStorage.getItem('b2h_font') || 'vazirmatn';
+  var defaultExportedFont = (document.documentElement && document.documentElement.getAttribute('data-font')) || 'system-sans';
+  var savedFont = localStorage.getItem('b2h_font');
+  var currentFont = savedFont || defaultExportedFont;
 
   // Base state
   var currentViewIdx = 0;
@@ -3162,6 +3164,13 @@ export function getClientScript(): string {
   }
 
   function applyFont(font) {
+    if (fontSelect && fontSelect.options) {
+      var hasOpt = false;
+      for (var i = 0; i < fontSelect.options.length; i++) {
+        if (fontSelect.options[i].value === font) { hasOpt = true; break; }
+      }
+      if (!hasOpt) font = defaultExportedFont;
+    }
     currentFont = font;
     htmlRoot.setAttribute('data-font', font);
     localStorage.setItem('b2h_font', font);
