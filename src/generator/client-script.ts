@@ -1848,7 +1848,7 @@ export function getClientScript(): string {
           current = current
             .map(function(it) { return evaluateSummaryItemExpression(mapExpr, it); })
             .filter(function(x) { return x !== null && x !== undefined && x !== ''; });
-        } else if (methodName === 'count') {
+        } else if (methodName === 'length' || methodName === 'count' || methodName === 'size') {
           current = current.length;
         } else if (methodName === 'sum') {
           var sumNums = current.map(Number).filter(function(n) { return !isNaN(n); });
@@ -1898,7 +1898,9 @@ export function getClientScript(): string {
           current = String(current);
         }
       } else if (typeof current === 'string') {
-        if (methodName === 'replace') {
+        if (methodName === 'length' || methodName === 'count' || methodName === 'size') {
+          current = current.length;
+        } else if (methodName === 'replace') {
           var repArgs = splitTopLevelCommas(argStr);
           var pattern = (repArgs[0] || '').trim();
           var replacement = (repArgs[1] || '').trim().replace(/^["']/, '').replace(/["']$/, '');

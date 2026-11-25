@@ -282,7 +282,7 @@ export function evaluateCustomSummaryFormula(formula: string, rawVals: unknown[]
 				current = current
 					.map((item) => evaluateSummaryItemExpression(mapExpr, item))
 					.filter((x) => x !== null && x !== undefined && x !== '');
-			} else if (methodName === 'count') {
+			} else if (methodName === 'length' || methodName === 'count' || methodName === 'size') {
 				current = current.length;
 			} else if (methodName === 'sum') {
 				const nums = current.map(Number).filter((n) => !isNaN(n));
@@ -332,7 +332,9 @@ export function evaluateCustomSummaryFormula(formula: string, rawVals: unknown[]
 				current = String(current);
 			}
 		} else if (typeof current === 'string') {
-			if (methodName === 'replace') {
+			if (methodName === 'length' || methodName === 'count' || methodName === 'size') {
+				current = current.length;
+			} else if (methodName === 'replace') {
 				const args = splitTopLevelCommas(argStr);
 				let pattern = (args[0] || '').trim();
 				const replacement = (args[1] || '').trim().replace(/^["']/, '').replace(/["']$/, '');
