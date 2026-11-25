@@ -5,7 +5,7 @@
 	"minAppVersion": "1.4.0",
 	"description": "Export Bases views to standalone, interactive, and responsive HTML pages for static hosting.",
 	"author": "iFard",
-	"authorUrl": "https://github.com/fardm/bases-to-html",
+	"authorUrl": "https://github.com/fardm",
 	"fundingUrl": "",
 	"isDesktopOnly": false
 }
