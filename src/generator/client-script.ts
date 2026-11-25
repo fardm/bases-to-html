@@ -1677,7 +1677,12 @@ export function getClientScript(): string {
     if (base.summaries && base.summaries[ruleStr]) {
       ruleStr = String(base.summaries[ruleStr]).trim();
       isCustomFormula = true;
-    } else if (ruleStr.startsWith('values') || ruleStr.includes('values.') || findTopLevelBinaryOp(ruleStr, ['+'])) {
+    } else if (
+      ruleStr.startsWith('values') ||
+      ruleStr.includes('values.') ||
+      ruleStr.startsWith('(') ||
+      findTopLevelBinaryOp(ruleStr, ['+', '-', '*', '/']) !== null
+    ) {
       isCustomFormula = true;
     }
 
@@ -1764,166 +1769,267 @@ export function getClientScript(): string {
     }
   }
 
-  function evaluateCustomSummaryFormula(formula, rawVals) {
-    var trimmed = formula.trim();
-
-    // 1. Check for top-level binary operations (specifically +)
-    var binaryMatch = findTopLevelBinaryOp(trimmed, ['+']);
-    if (binaryMatch) {
-      var leftVal = evaluateCustomSummaryFormula(binaryMatch.left, rawVals);
-      var rightVal = evaluateCustomSummaryFormula(binaryMatch.right, rawVals);
-      if (typeof leftVal === 'string' || typeof rightVal === 'string') {
-        return String(leftVal != null ? leftVal : '') + String(rightVal != null ? rightVal : '');
-      }
-      var numLeft = Number(leftVal);
-      var numRight = Number(rightVal);
-      if (!isNaN(numLeft) && !isNaN(numRight)) {
-        var sum = numLeft + numRight;
-        return Number.isInteger(sum) ? sum : Math.round(sum * 10000) / 10000;
-      }
-      return String(leftVal != null ? leftVal : '') + String(rightVal != null ? rightVal : '');
-    }
-
-    // 2. String literal
-    if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
-      return trimmed.slice(1, -1);
-    }
-
-    // 3. Number literal
-    if (!isNaN(Number(trimmed)) && trimmed !== '') {
-      return Number(trimmed);
-    }
-
-    // 4. Boolean or null
-    if (trimmed === 'true') return true;
-    if (trimmed === 'false') return false;
-    if (trimmed === 'null' || trimmed === 'undefined') return '';
-
-    // 5. Pipeline starting with 'values'
-    var calls = splitPipelineCalls(trimmed);
-    if (calls.length === 0 || calls[0] !== 'values') {
-      return trimmed;
-    }
-
-    var current = rawVals.slice();
-
-    for (var i = 1; i < calls.length; i++) {
-      var callStr = calls[i];
-      if (!callStr) continue;
-      var match = callStr.match(/^(\\w+)(?:\\((.*)\\))?$/);
-      if (!match) continue;
-
-      var methodName = match[1];
-      var argStr = match[2] !== undefined ? match[2] : '';
-
-      if (Array.isArray(current)) {
-        if (methodName === 'flat') {
-          var flattened = [];
-          for (var j = 0; j < current.length; j++) {
-            var item = current[j];
-            if (Array.isArray(item)) {
-              for (var k = 0; k < item.length; k++) {
-                if (item[k] !== null && item[k] !== undefined && item[k] !== '') flattened.push(item[k]);
-              }
-            } else if (item !== null && item !== undefined && item !== '') {
-              flattened.push(item);
-            }
-          }
-          current = flattened;
-        } else if (methodName === 'unique') {
-          var seen = new Set();
-          current = current.filter(function(x) {
-            var s = String(x);
-            if (seen.has(s)) return false;
-            seen.add(s);
-            return true;
-          });
-        } else if (methodName === 'filter') {
-          var predExpr = argStr.trim();
-          current = current.filter(function(it) {
-            return Boolean(evaluateSummaryItemExpression(predExpr, it));
-          });
-        } else if (methodName === 'map') {
-          var mapExpr = argStr.trim();
-          current = current
-            .map(function(it) { return evaluateSummaryItemExpression(mapExpr, it); })
-            .filter(function(x) { return x !== null && x !== undefined && x !== ''; });
-        } else if (methodName === 'length' || methodName === 'count' || methodName === 'size') {
-          current = current.length;
-        } else if (methodName === 'sum') {
-          var sumNums = current.map(Number).filter(function(n) { return !isNaN(n); });
-          var s = sumNums.reduce(function(a, b) { return a + b; }, 0);
-          current = Number.isInteger(s) ? s : Math.round(s * 10000) / 10000;
-        } else if (methodName === 'mean' || methodName === 'avg' || methodName === 'average') {
-          var meanNums = current.map(Number).filter(function(n) { return !isNaN(n); });
-          if (meanNums.length === 0) {
-            current = 0;
-          } else {
-            var avg = meanNums.reduce(function(a, b) { return a + b; }, 0) / meanNums.length;
-            current = Math.round(avg * 100) / 100;
-          }
-        } else if (methodName === 'median') {
-          var medNums = current.map(Number).filter(function(n) { return !isNaN(n); }).sort(function(a, b) { return a - b; });
-          if (medNums.length === 0) {
-            current = 0;
-          } else {
-            var mid = Math.floor(medNums.length / 2);
-            current = medNums.length % 2 !== 0 ? (medNums[mid] || 0) : (((medNums[mid - 1] || 0) + (medNums[mid] || 0)) / 2);
-          }
-        } else if (methodName === 'min') {
-          var minNums = current.map(Number).filter(function(n) { return !isNaN(n); });
-          current = minNums.length > 0 ? Math.min.apply(null, minNums) : 0;
-        } else if (methodName === 'max') {
-          var maxNums = current.map(Number).filter(function(n) { return !isNaN(n); });
-          current = maxNums.length > 0 ? Math.max.apply(null, maxNums) : 0;
-        } else if (methodName === 'join') {
-          var sep = argStr.replace(/^["']/, '').replace(/["']$/, '') || ', ';
-          current = current.map(function(x) { return String(x != null ? x : ''); }).join(sep);
+  function findMatchingClosingParen(str, openIdx) {
+    var depth = 0;
+    var inQuote = null;
+    for (var i = openIdx; i < str.length; i++) {
+      var char = str[i];
+      if (inQuote) {
+        if (char === inQuote && str[i - 1] !== '\\\\') {
+          inQuote = null;
         }
-      } else if (typeof current === 'number') {
+        continue;
+      }
+      if (char === '"' || char === "'") {
+        inQuote = char;
+        continue;
+      }
+      if (char === '(') {
+        depth++;
+      } else if (char === ')') {
+        depth--;
+        if (depth === 0) {
+          return i;
+        }
+      }
+    }
+    return -1;
+  }
+
+  function applyMethodOnValue(current, callStr) {
+    if (!callStr) return current;
+    var match = callStr.match(/^(\\w+)(?:\\((.*)\\))?$/);
+    if (!match) return current;
+
+    var methodName = match[1];
+    var argStr = match[2] !== undefined ? match[2] : '';
+
+    if (Array.isArray(current)) {
+      if (methodName === 'flat') {
+        var flattened = [];
+        for (var j = 0; j < current.length; j++) {
+          var item = current[j];
+          if (Array.isArray(item)) {
+            for (var k = 0; k < item.length; k++) {
+              if (item[k] !== null && item[k] !== undefined && item[k] !== '') flattened.push(item[k]);
+            }
+          } else if (item !== null && item !== undefined && item !== '') {
+            flattened.push(item);
+          }
+        }
+        return flattened;
+      } else if (methodName === 'unique') {
+        var seen = new Set();
+        return current.filter(function(x) {
+          var s = String(x);
+          if (seen.has(s)) return false;
+          seen.add(s);
+          return true;
+        });
+      } else if (methodName === 'filter') {
+        var predExpr = argStr.trim();
+        return current.filter(function(it) {
+          return Boolean(evaluateSummaryItemExpression(predExpr, it));
+        });
+      } else if (methodName === 'map') {
+        var mapExpr = argStr.trim();
+        return current
+          .map(function(it) { return evaluateSummaryItemExpression(mapExpr, it); })
+          .filter(function(x) { return x !== null && x !== undefined && x !== ''; });
+      } else if (methodName === 'length' || methodName === 'count' || methodName === 'size') {
+        return current.length;
+      } else if (methodName === 'sum') {
+        var sumNums = current.map(Number).filter(function(n) { return !isNaN(n); });
+        var s = sumNums.reduce(function(a, b) { return a + b; }, 0);
+        return Number.isInteger(s) ? s : Math.round(s * 10000) / 10000;
+      } else if (methodName === 'mean' || methodName === 'avg' || methodName === 'average') {
+        var meanNums = current.map(Number).filter(function(n) { return !isNaN(n); });
+        if (meanNums.length === 0) {
+          return 0;
+        } else {
+          var avg = meanNums.reduce(function(a, b) { return a + b; }, 0) / meanNums.length;
+          return Math.round(avg * 100) / 100;
+        }
+      } else if (methodName === 'median') {
+        var medNums = current.map(Number).filter(function(n) { return !isNaN(n); }).sort(function(a, b) { return a - b; });
+        if (medNums.length === 0) {
+          return 0;
+        } else {
+          var mid = Math.floor(medNums.length / 2);
+          return medNums.length % 2 !== 0 ? (medNums[mid] || 0) : (((medNums[mid - 1] || 0) + (medNums[mid] || 0)) / 2);
+        }
+      } else if (methodName === 'min') {
+        var minNums = current.map(Number).filter(function(n) { return !isNaN(n); });
+        return minNums.length > 0 ? Math.min.apply(null, minNums) : 0;
+      } else if (methodName === 'max') {
+        var maxNums = current.map(Number).filter(function(n) { return !isNaN(n); });
+        return maxNums.length > 0 ? Math.max.apply(null, maxNums) : 0;
+      } else if (methodName === 'join') {
+        var sep = argStr.replace(/^["']/, '').replace(/["']$/, '') || ', ';
+        return current.map(function(x) { return String(x != null ? x : ''); }).join(sep);
+      }
+    } else {
+      if (
+        typeof current === 'string' &&
+        !isNaN(Number(current)) &&
+        (methodName === 'round' || methodName === 'toFixed' || methodName === 'floor' || methodName === 'ceil')
+      ) {
+        current = Number(current);
+      }
+
+      if (typeof current === 'number') {
         if (methodName === 'round') {
           var decimals = argStr.trim() ? parseInt(argStr.trim(), 10) : 0;
           var factor = Math.pow(10, isNaN(decimals) ? 0 : decimals);
-          current = Math.round(current * factor) / factor;
+          return Math.round(current * factor) / factor;
         } else if (methodName === 'toFixed') {
           var fixDecimals = argStr.trim() ? parseInt(argStr.trim(), 10) : 0;
-          current = current.toFixed(isNaN(fixDecimals) ? 0 : fixDecimals);
+          return current.toFixed(isNaN(fixDecimals) ? 0 : fixDecimals);
         } else if (methodName === 'floor') {
-          current = Math.floor(current);
+          return Math.floor(current);
         } else if (methodName === 'ceil') {
-          current = Math.ceil(current);
+          return Math.ceil(current);
         } else if (methodName === 'abs') {
-          current = Math.abs(current);
+          return Math.abs(current);
         } else if (methodName === 'toString') {
-          current = String(current);
+          return String(current);
         }
       } else if (typeof current === 'string') {
         if (methodName === 'length' || methodName === 'count' || methodName === 'size') {
-          current = current.length;
+          return current.length;
         } else if (methodName === 'replace') {
           var repArgs = splitTopLevelCommas(argStr);
           var pattern = (repArgs[0] || '').trim();
           var replacement = (repArgs[1] || '').trim().replace(/^["']/, '').replace(/["']$/, '');
-          var regMatch = pattern.match(/^\\/(.*)\\/([gimsuy]*)$/);
+          var regMatch = pattern.match(/^\\/(.*)\\// + '([gimsuy]*)$');
           if (regMatch) {
             try {
               var reg = new RegExp(regMatch[1] || '', regMatch[2]);
-              current = current.replace(reg, replacement);
+              return current.replace(reg, replacement);
             } catch (e) {
               // ignore
             }
           } else {
             pattern = pattern.replace(/^["']/, '').replace(/["']$/, '');
-            current = current.replace(pattern, replacement);
+            return current.replace(pattern, replacement);
           }
         } else if (methodName === 'toLowerCase') {
-          current = current.toLowerCase();
+          return current.toLowerCase();
         } else if (methodName === 'toUpperCase') {
-          current = current.toUpperCase();
+          return current.toUpperCase();
         } else if (methodName === 'trim') {
-          current = current.trim();
+          return current.trim();
         }
       }
+    }
+    return current;
+  }
+
+  function evaluateCustomSummaryFormula(formula, rawVals) {
+    var trimmed = formula.trim();
+
+    // 1. Check for top-level binary operations (+, -)
+    var addSubMatch = findTopLevelBinaryOp(trimmed, ['+', '-']);
+    if (addSubMatch) {
+      var leftVal = evaluateCustomSummaryFormula(addSubMatch.left, rawVals);
+      var rightVal = evaluateCustomSummaryFormula(addSubMatch.right, rawVals);
+      if (addSubMatch.op === '+') {
+        if (typeof leftVal === 'string' || typeof rightVal === 'string') {
+          return String(leftVal != null ? leftVal : '') + String(rightVal != null ? rightVal : '');
+        }
+        var numLeft = Number(leftVal);
+        var numRight = Number(rightVal);
+        if (!isNaN(numLeft) && !isNaN(numRight)) {
+          var sum = numLeft + numRight;
+          return Number.isInteger(sum) ? sum : Math.round(sum * 10000) / 10000;
+        }
+        return String(leftVal != null ? leftVal : '') + String(rightVal != null ? rightVal : '');
+      } else if (addSubMatch.op === '-') {
+        var numLeftSub = Number(leftVal);
+        var numRightSub = Number(rightVal);
+        if (!isNaN(numLeftSub) && !isNaN(numRightSub)) {
+          var diff = numLeftSub - numRightSub;
+          return Number.isInteger(diff) ? diff : Math.round(diff * 10000) / 10000;
+        }
+        return '-';
+      }
+    }
+
+    // 2. Check for top-level binary operations (*, /, %)
+    var mulDivMatch = findTopLevelBinaryOp(trimmed, ['*', '/', '%']);
+    if (mulDivMatch) {
+      var leftValMul = evaluateCustomSummaryFormula(mulDivMatch.left, rawVals);
+      var rightValMul = evaluateCustomSummaryFormula(mulDivMatch.right, rawVals);
+      var numLeftM = Number(leftValMul);
+      var numRightM = Number(rightValMul);
+      if (!isNaN(numLeftM) && !isNaN(numRightM)) {
+        var res = 0;
+        if (mulDivMatch.op === '*') {
+          res = numLeftM * numRightM;
+        } else if (mulDivMatch.op === '/') {
+          if (numRightM === 0) return 0;
+          res = numLeftM / numRightM;
+        } else if (mulDivMatch.op === '%') {
+          if (numRightM === 0) return 0;
+          res = numLeftM % numRightM;
+        }
+        return Number.isInteger(res) ? res : Math.round(res * 10000) / 10000;
+      }
+      return '-';
+    }
+
+    // 3. Parenthesized expression starting with '(' e.g. (values.sum() / 60).round()
+    if (trimmed.startsWith('(')) {
+      var closeParenIdx = findMatchingClosingParen(trimmed, 0);
+      if (closeParenIdx !== -1) {
+        var inner = trimmed.slice(1, closeParenIdx).trim();
+        var tail = trimmed.slice(closeParenIdx + 1).trim();
+        var result = evaluateCustomSummaryFormula(inner, rawVals);
+        if (tail.startsWith('.')) {
+          var calls = splitPipelineCalls(tail.slice(1));
+          for (var c = 0; c < calls.length; c++) {
+            result = applyMethodOnValue(result, calls[c]);
+          }
+        }
+        if (typeof result === 'number' || typeof result === 'boolean') {
+          return result;
+        }
+        if (typeof result === 'string') {
+          return result;
+        }
+        if (Array.isArray(result)) {
+          return result.map(function(x) { return String(x != null ? x : ''); }).join(' ');
+        }
+        return String(result != null ? result : '-');
+      }
+    }
+
+    // 4. String literal
+    if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+      return trimmed.slice(1, -1);
+    }
+
+    // 5. Number literal
+    if (!isNaN(Number(trimmed)) && trimmed !== '') {
+      return Number(trimmed);
+    }
+
+    // 6. Boolean or null
+    if (trimmed === 'true') return true;
+    if (trimmed === 'false') return false;
+    if (trimmed === 'null' || trimmed === 'undefined') return '';
+
+    // 7. Pipeline starting with 'values'
+    var callsP = splitPipelineCalls(trimmed);
+    if (callsP.length === 0 || callsP[0] !== 'values') {
+      return trimmed;
+    }
+
+    var current = rawVals.slice();
+    for (var p = 1; p < callsP.length; p++) {
+      var callStrP = callsP[p];
+      if (!callStrP) continue;
+      current = applyMethodOnValue(current, callStrP);
     }
 
     if (Array.isArray(current)) {
@@ -2094,9 +2200,13 @@ export function getClientScript(): string {
         for (var j = 0; j < ops.length; j++) {
           var op = ops[j];
           if (expr.slice(i, i + op.length) === op) {
+            var left = expr.slice(0, i).trim();
+            if (left.length === 0 && (op === '+' || op === '-')) {
+              continue;
+            }
             lastMatch = {
               index: i,
-              left: expr.slice(0, i).trim(),
+              left: left,
               op: op,
               right: expr.slice(i + op.length).trim()
             };
