@@ -4,6 +4,8 @@
 
 **Bases to HTML** is an Obsidian plugin that transforms your **Bases** database views into standalone, responsive, and fully interactive HTML pages. The generated files require no backend server or external dependencies, making them perfect for offline archiving, sharing, or publishing to static website hosts like GitHub Pages.
 
+**[Live Demo](https://fardm.github.io/bases-to-html/)** — Explore and interact with a live example of the exported HTML page. Try searching, filtering, sorting, grouping, and switching between views.
+
 ---
 
 ## Supported Views
