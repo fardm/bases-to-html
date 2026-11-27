@@ -222,7 +222,7 @@ export class HtmlBuilder {
     <div class="navbar-container">
       <div class="nav-brand-group">
         <a href="${rootHref}" class="nav-brand" title="Home">
-          ${renderIconSvg('folder')}
+          ${FAVICON_SVG}
           <span>${escapeHtml(this.options.documentTitle || baseConfig.baseTitle)}</span>
         </a>
         ${baseConfig.views.length > 1
@@ -233,6 +233,22 @@ export class HtmlBuilder {
         </div>`
         : ''
       }
+        <!-- Results Count & Limit Popover -->
+        <div class="toolbar-btn-group results-limit-group">
+          <button id="resultsLimitBtn" class="toolbar-btn results-limit-btn" type="button" title="Limit number of results">
+            <span id="resultsCountText">0 results</span>
+          </button>
+          <div id="resultsLimitPopover" class="bases-popover popover-align-left results-limit-popover">
+            <div class="popover-header">Limit number of results</div>
+            <div class="results-limit-controls">
+              <input type="number" id="resultsLimitInput" class="results-limit-input" min="1" placeholder="No limit">
+              <button id="resultsShowAllBtn" class="results-show-all-btn" type="button" title="Show all results">
+                ${renderIconSvg('refresh-cw', 'b2h-icon-xs')}
+                <span>Show all</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="nav-controls">
@@ -288,11 +304,11 @@ export class HtmlBuilder {
           </div>
         </div>
 
-        <!-- Search Box -->
-        <div class="search-box">
-          <input type="text" id="searchInput" class="search-input" placeholder="Search..." autocomplete="off">
-          <button id="searchClearBtn" class="search-clear-btn" title="Clear search">${renderIconSvg('x', 'b2h-icon-xs')}</button>
-        </div>
+        <!-- Search Toggle Button -->
+        <button id="searchToggleBtn" class="toolbar-btn" type="button" title="Search items">
+          ${renderIconSvg('search')}
+          <span>Search</span>
+        </button>
 
         <!-- Settings Button -->
         <button id="settingsBtn" class="toolbar-btn" title="Display settings">
@@ -304,8 +320,12 @@ export class HtmlBuilder {
 
   <!-- Main content -->
   <main class="main-content" data-view-id="${escapeHtml(firstView?.id || '')}" data-view-name="${escapeHtml(firstView?.name || '')}" data-view-type="${escapeHtml(firstView?.type || 'cards')}">
-    <div class="content-status-bar bases-status-bar">
-      <span id="itemCountBadge" class="item-count-badge bases-item-count">0 items</span>
+    <div id="searchBarContainer" class="content-search-bar" style="display: none;">
+      <div class="content-search-input-wrap">
+        ${renderIconSvg('search', 'content-search-icon')}
+        <input type="text" id="searchInput" class="content-search-input" placeholder="Find..." autocomplete="off">
+        <button id="searchClearBtn" class="search-clear-btn" type="button" title="Clear search">${renderIconSvg('x', 'b2h-icon-xs')}</button>
+      </div>
     </div>
 
     <div id="contentContainer" class="content-container bases-view-container"></div>

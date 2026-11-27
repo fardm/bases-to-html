@@ -36,12 +36,14 @@ export function getClientScript(): string {
   }
 
   var searchQuery = '';
+  var isSearchOpen = false;
   var globalFilterTree = { type: 'group', conjunction: 'and', children: [] };
   var viewFilterTree = { type: 'group', conjunction: 'and', children: [] };
   var activePillDropdown = null;
   var activeSortRules = [];
   var activeGroupRule = null;
   var activeOrder = [];
+  var activeResultLimit = null;
 
   // Property types dictionary from export
   var propertyTypes = base.propertyTypes || {};
@@ -127,8 +129,16 @@ export function getClientScript(): string {
   // DOM Elements
   var htmlRoot = document.documentElement;
   var viewSelect = document.getElementById('viewSelect');
+  var searchToggleBtn = document.getElementById('searchToggleBtn');
+  var searchBarContainer = document.getElementById('searchBarContainer');
   var searchInput = document.getElementById('searchInput');
   var searchClearBtn = document.getElementById('searchClearBtn');
+
+  var resultsLimitBtn = document.getElementById('resultsLimitBtn');
+  var resultsCountText = document.getElementById('resultsCountText');
+  var resultsLimitPopover = document.getElementById('resultsLimitPopover');
+  var resultsLimitInput = document.getElementById('resultsLimitInput');
+  var resultsShowAllBtn = document.getElementById('resultsShowAllBtn');
 
   // Popover Buttons & Elements
   var sortToggleBtn = document.getElementById('sortToggleBtn');
@@ -152,7 +162,6 @@ export function getClientScript(): string {
   var propertiesList = document.getElementById('propertiesList');
 
   var contentContainer = document.getElementById('contentContainer');
-  var itemCountBadge = document.getElementById('itemCountBadge');
 
   // Settings Drawer Elements
   var settingsBtn = document.getElementById('settingsBtn');
@@ -184,7 +193,24 @@ export function getClientScript(): string {
   // Setup Popovers toggling
   setupPopoverToggles();
 
-  // Search input events
+  // Search toggle & input events
+  if (searchToggleBtn && searchBarContainer) {
+    searchToggleBtn.addEventListener('click', function() {
+      isSearchOpen = !isSearchOpen;
+      if (isSearchOpen) {
+        searchBarContainer.style.display = 'block';
+        if (searchInput) searchInput.focus();
+      } else {
+        searchBarContainer.style.display = 'none';
+        searchQuery = '';
+        if (searchInput) searchInput.value = '';
+        if (searchClearBtn) searchClearBtn.classList.remove('visible');
+        renderCards();
+      }
+      updateToolbarActiveStates();
+    });
+  }
+
   if (searchInput) {
     searchInput.addEventListener('input', function(e) {
       searchQuery = e.target.value.trim().toLowerCase();
@@ -198,10 +224,34 @@ export function getClientScript(): string {
 
   if (searchClearBtn) {
     searchClearBtn.addEventListener('click', function() {
-      searchInput.value = '';
+      if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+      }
       searchQuery = '';
       searchClearBtn.classList.remove('visible');
       renderCards();
+    });
+  }
+
+  // Results limit events
+  if (resultsLimitInput) {
+    resultsLimitInput.addEventListener('input', function(e) {
+      var parsed = parseInt(e.target.value, 10);
+      activeResultLimit = (!isNaN(parsed) && parsed > 0) ? parsed : null;
+      saveLimitState();
+      renderCards();
+      updateToolbarActiveStates();
+    });
+  }
+
+  if (resultsShowAllBtn) {
+    resultsShowAllBtn.addEventListener('click', function() {
+      activeResultLimit = null;
+      if (resultsLimitInput) resultsLimitInput.value = '';
+      saveLimitState();
+      renderCards();
+      updateToolbarActiveStates();
     });
   }
 
@@ -251,7 +301,8 @@ export function getClientScript(): string {
       { btn: sortToggleBtn, popover: sortPopover },
       { btn: groupToggleBtn, popover: groupPopover },
       { btn: filterToggleBtn, popover: filterPopover },
-      { btn: propertiesToggleBtn, popover: propertiesPopover }
+      { btn: propertiesToggleBtn, popover: propertiesPopover },
+      { btn: resultsLimitBtn, popover: resultsLimitPopover }
     ];
 
     popoverPairs.forEach(function(pair) {
@@ -263,6 +314,9 @@ export function getClientScript(): string {
         if (!wasOpen) {
           pair.popover.classList.add('open');
           pair.btn.classList.add('active');
+          if (pair.popover === resultsLimitPopover && resultsLimitInput) {
+            resultsLimitInput.focus();
+          }
         }
       });
 
@@ -308,7 +362,7 @@ export function getClientScript(): string {
 
   function closeAllPopovers() {
     closeActivePillDropdown();
-    [sortPopover, groupPopover, filterPopover, propertiesPopover].forEach(function(pop) {
+    [sortPopover, groupPopover, filterPopover, propertiesPopover, resultsLimitPopover].forEach(function(pop) {
       if (pop) pop.classList.remove('open');
     });
     updateToolbarActiveStates();
@@ -353,6 +407,20 @@ export function getClientScript(): string {
     if (propertiesToggleBtn) {
       var isPropsOpen = propertiesPopover && propertiesPopover.classList.contains('open');
       propertiesToggleBtn.classList.toggle('active', isPropsOpen);
+    }
+
+    if (searchToggleBtn) {
+      searchToggleBtn.classList.toggle('active', isSearchOpen);
+    }
+
+    if (resultsLimitBtn) {
+      var isLimitOpen = resultsLimitPopover && resultsLimitPopover.classList.contains('open');
+      var hasLimit = activeResultLimit !== null && activeResultLimit > 0;
+      resultsLimitBtn.classList.toggle('active', isLimitOpen || hasLimit);
+    }
+
+    if (resultsShowAllBtn) {
+      resultsShowAllBtn.disabled = !(activeResultLimit !== null && activeResultLimit > 0);
     }
   }
 
@@ -471,8 +539,21 @@ export function getClientScript(): string {
       propPopoverHeader.textContent = 'Properties';
     }
 
+    // 5. Result limit state
+    var savedLimit = localStorage.getItem(storagePrefix + viewKey + '_limit');
+    if (savedLimit !== null) {
+      var parsedLimit = parseInt(savedLimit, 10);
+      activeResultLimit = (!isNaN(parsedLimit) && parsedLimit > 0) ? parsedLimit : null;
+    } else {
+      activeResultLimit = null;
+    }
+    if (resultsLimitInput) {
+      resultsLimitInput.value = activeResultLimit ? String(activeResultLimit) : '';
+    }
+
     searchQuery = '';
     if (searchInput) searchInput.value = '';
+    if (searchClearBtn) searchClearBtn.classList.remove('visible');
 
     renderSortPopover();
     renderGroupPopover();
@@ -874,6 +955,15 @@ export function getClientScript(): string {
 
   function saveOrderState() {
     localStorage.setItem(storagePrefix + getViewStorageKey() + '_order', JSON.stringify(activeOrder));
+  }
+
+  function saveLimitState() {
+    if (activeResultLimit !== null && activeResultLimit > 0) {
+      localStorage.setItem(storagePrefix + getViewStorageKey() + '_limit', String(activeResultLimit));
+    } else {
+      localStorage.removeItem(storagePrefix + getViewStorageKey() + '_limit');
+    }
+    updateToolbarActiveStates();
   }
 
   // =========================================================================
@@ -2001,8 +2091,13 @@ export function getClientScript(): string {
       });
     }
 
-    if (itemCountBadge) {
-      itemCountBadge.textContent = filtered.length + ' item' + (filtered.length === 1 ? '' : 's');
+    // Apply result limit
+    if (activeResultLimit !== null && activeResultLimit > 0) {
+      filtered = filtered.slice(0, activeResultLimit);
+    }
+
+    if (resultsCountText) {
+      resultsCountText.textContent = filtered.length + ' result' + (filtered.length === 1 ? '' : 's');
     }
 
     contentContainer.innerHTML = '';

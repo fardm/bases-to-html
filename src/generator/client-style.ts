@@ -189,6 +189,13 @@ body {
   transition: color var(--transition-fast);
 }
 
+.nav-brand > svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: block;
+}
+
 .nav-brand:hover {
   color: var(--accent-color);
 }
@@ -269,14 +276,28 @@ body {
   line-height: 1.2;
 }
 
-.search-box {
-  position: relative;
-  display: flex;
-  align-items: center;
+/* Results Limit Popover */
+.results-limit-btn {
+  font-size: 0.825rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-.search-input {
-  padding: 0.4rem 1.8rem 0.4rem 0.75rem;
+.results-limit-popover {
+  min-width: 250px;
+}
+
+.results-limit-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.results-limit-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
   font-size: 0.85rem;
   font-family: inherit;
   background-color: var(--bg-tertiary);
@@ -284,30 +305,99 @@ body {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   outline: none;
-  width: 170px;
-  transition: width var(--transition-normal), border-color var(--transition-fast);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
 }
 
-.search-input:focus {
-  width: 220px;
+.results-limit-input:focus {
   border-color: var(--border-focus);
   background-color: var(--bg-secondary);
 }
 
+.results-show-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.825rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-secondary);
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.results-show-all-btn:hover:not(:disabled) {
+  background-color: var(--bg-pill-hover);
+  color: var(--text-primary);
+}
+
+.results-show-all-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Full-width Content Search Bar */
+.content-search-bar {
+  margin-bottom: 1.25rem;
+}
+
+.content-search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.content-search-icon {
+  position: absolute;
+  left: 0.85rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.content-search-input {
+  width: 100%;
+  padding: 0.6rem 2.25rem 0.6rem 2.4rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  outline: none;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.content-search-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
 .search-clear-btn {
   position: absolute;
-  right: 0.5rem;
+  right: 0.6rem;
   background: transparent;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
   display: none;
-  font-size: 1rem;
-  padding: 0 0.25rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 4px;
+}
+
+.search-clear-btn:hover {
+  color: var(--text-primary);
 }
 
 .search-clear-btn.visible {
-  display: block;
+  display: inline-flex;
 }
 
 /* ========================================================================= */
@@ -364,6 +454,39 @@ body {
   gap: 0.45rem;
   max-height: 380px;
   overflow-y: auto;
+  padding-right: 3px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+.popover-rules-list::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.popover-rules-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.popover-rules-list::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+
+.popover-rules-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.55);
+}
+
+[data-theme="dark"] .popover-rules-list {
+  scrollbar-color: rgba(123, 132, 148, 0.35) transparent;
+}
+
+[data-theme="dark"] .popover-rules-list::-webkit-scrollbar-thumb {
+  background-color: rgba(123, 132, 148, 0.35);
+}
+
+[data-theme="dark"] .popover-rules-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(123, 132, 148, 0.55);
 }
 
 .popover-rule-row {
@@ -723,10 +846,38 @@ body {
 }
 
 .property-visibility-toggle {
-  cursor: pointer;
-  accent-color: var(--accent-color);
+  appearance: none;
+  -webkit-appearance: none;
   width: 16px;
   height: 16px;
+  border: 1.5px solid var(--text-muted);
+  border-radius: 4px;
+  background-color: transparent;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.property-visibility-toggle:hover {
+  border-color: var(--text-secondary);
+}
+
+.property-visibility-toggle:checked {
+  border-color: var(--accent-color);
+  background-color: var(--accent-color);
+}
+
+.property-visibility-toggle:checked::after {
+  content: "";
+  position: absolute;
+  left: 4.5px;
+  top: 1.5px;
+  width: 4px;
+  height: 8px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 /* ========================================================================= */
@@ -739,21 +890,6 @@ body {
   width: 100%;
   margin: 0 auto;
   padding: 1.5rem 1.25rem;
-}
-
-.content-status-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.item-count-badge {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  font-weight: 500;
 }
 
 /* Group Sections */
@@ -1434,15 +1570,6 @@ body {
   }
   .nav-controls {
     justify-content: flex-start;
-  }
-  .search-input {
-    width: 100%;
-  }
-  .search-input:focus {
-    width: 100%;
-  }
-  .search-box {
-    flex: 1;
   }
   .bases-popover {
     position: fixed;
