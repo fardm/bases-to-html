@@ -167,11 +167,12 @@ export function getClientScript(): string {
   var settingsBtn = document.getElementById('settingsBtn');
   var settingsDrawer = document.getElementById('settingsDrawer');
   var drawerCloseBtn = document.getElementById('drawerCloseBtn');
-  var mobileFilterHost = document.getElementById('mobileFilterHost');
-  var mobileGroupHost = document.getElementById('mobileGroupHost');
-  var mobileSortHost = document.getElementById('mobileSortHost');
-  var mobilePropertiesHost = document.getElementById('mobilePropertiesHost');
-  var mobileResultsHost = document.getElementById('mobileResultsHost');
+  var drawerBackBtn = document.getElementById('drawerBackBtn');
+  var drawerTitle = document.getElementById('drawerTitle');
+  var drawerBodyMain = document.getElementById('drawerBodyMain');
+  var mobileSubpageView = document.getElementById('mobileSubpageView');
+  var mobileSubpageDesc = document.getElementById('mobileSubpageDesc');
+  var mobileSubpageHost = document.getElementById('mobileSubpageHost');
   var mobileFilterBadge = document.getElementById('mobileFilterBadge');
   var mobileSortBadge = document.getElementById('mobileSortBadge');
   var mobileResultsCountHint = document.getElementById('mobileResultsCountHint');
@@ -3267,78 +3268,119 @@ export function getClientScript(): string {
     }
   }
 
-  var isMobilePanelsMounted = false;
+  var activeMobileSubpage = null;
 
   function isMobileViewport() {
     return (window.innerWidth || document.documentElement.clientWidth || 1024) <= 768;
   }
 
-  function mountMobileControlPanels() {
-    if (isMobilePanelsMounted || !isMobileViewport()) return;
-    if (mobileFilterHost && filterRulesList) mobileFilterHost.appendChild(filterRulesList);
-    if (mobileGroupHost && groupRulesList) {
-      mobileGroupHost.appendChild(groupRulesList);
-      if (addGroupBtn) mobileGroupHost.appendChild(addGroupBtn);
-    }
-    if (mobileSortHost && sortRulesList) {
-      mobileSortHost.appendChild(sortRulesList);
-      if (addSortBtn) mobileSortHost.appendChild(addSortBtn);
-    }
-    if (mobilePropertiesHost && propertiesList) mobilePropertiesHost.appendChild(propertiesList);
-    if (mobileResultsHost && resultsLimitControls) mobileResultsHost.appendChild(resultsLimitControls);
-    isMobilePanelsMounted = true;
-  }
-
   function restoreDesktopControlPanels() {
-    if (!isMobilePanelsMounted) return;
-    if (filterPopover && filterRulesList) filterPopover.appendChild(filterRulesList);
-    if (groupPopover && groupRulesList) {
+    if (filterPopover && filterRulesList && filterRulesList.parentNode !== filterPopover) {
+      filterPopover.appendChild(filterRulesList);
+    }
+    if (groupPopover && groupRulesList && groupRulesList.parentNode !== groupPopover) {
       groupPopover.appendChild(groupRulesList);
       if (addGroupBtn) groupPopover.appendChild(addGroupBtn);
     }
-    if (sortPopover && sortRulesList) {
+    if (sortPopover && sortRulesList && sortRulesList.parentNode !== sortPopover) {
       sortPopover.appendChild(sortRulesList);
       if (addSortBtn) sortPopover.appendChild(addSortBtn);
     }
-    if (propertiesPopover && propertiesList) propertiesPopover.appendChild(propertiesList);
-    if (resultsLimitPopover && resultsLimitControls) resultsLimitPopover.appendChild(resultsLimitControls);
-    isMobilePanelsMounted = false;
+    if (propertiesPopover && propertiesList && propertiesList.parentNode !== propertiesPopover) {
+      propertiesPopover.appendChild(propertiesList);
+    }
+    if (resultsLimitPopover && resultsLimitControls && resultsLimitControls.parentNode !== resultsLimitPopover) {
+      resultsLimitPopover.appendChild(resultsLimitControls);
+    }
   }
 
-  // Accordion toggles inside mobile Settings panel
+  function showMobileMainPage() {
+    closeActivePillDropdown();
+    restoreDesktopControlPanels();
+    activeMobileSubpage = null;
+    if (settingsDrawer) settingsDrawer.setAttribute('data-mobile-page', 'main');
+    if (drawerTitle) drawerTitle.textContent = 'Settings';
+    if (drawerBodyMain) drawerBodyMain.style.display = '';
+    if (mobileSubpageView) mobileSubpageView.style.display = 'none';
+    if (mobileSubpageDesc) {
+      mobileSubpageDesc.textContent = '';
+      mobileSubpageDesc.style.display = 'none';
+    }
+  }
+
+  function openMobileSubpage(subpageId, title) {
+    if (!mobileSubpageHost) return;
+    closeActivePillDropdown();
+    restoreDesktopControlPanels();
+    activeMobileSubpage = subpageId;
+
+    if (settingsDrawer) settingsDrawer.setAttribute('data-mobile-page', subpageId);
+    if (drawerTitle) drawerTitle.textContent = title || subpageId;
+    if (drawerBodyMain) drawerBodyMain.style.display = 'none';
+    if (mobileSubpageView) mobileSubpageView.style.display = '';
+
+    if (mobileSubpageDesc) {
+      if (subpageId === 'results') {
+        mobileSubpageDesc.textContent = 'Limit number of results';
+        mobileSubpageDesc.style.display = '';
+      } else {
+        mobileSubpageDesc.textContent = '';
+        mobileSubpageDesc.style.display = 'none';
+      }
+    }
+
+    if (subpageId === 'filter' && filterRulesList) {
+      mobileSubpageHost.appendChild(filterRulesList);
+    } else if (subpageId === 'group' && groupRulesList) {
+      mobileSubpageHost.appendChild(groupRulesList);
+      if (addGroupBtn) mobileSubpageHost.appendChild(addGroupBtn);
+    } else if (subpageId === 'sort' && sortRulesList) {
+      mobileSubpageHost.appendChild(sortRulesList);
+      if (addSortBtn) mobileSubpageHost.appendChild(addSortBtn);
+    } else if (subpageId === 'properties' && propertiesList) {
+      mobileSubpageHost.appendChild(propertiesList);
+    } else if (subpageId === 'results' && resultsLimitControls) {
+      mobileSubpageHost.appendChild(resultsLimitControls);
+    }
+  }
+
+  // Multi-page navigation inside mobile Settings panel
   if (settingsDrawer) {
-    var accTriggers = settingsDrawer.querySelectorAll('.mobile-acc-trigger');
-    accTriggers.forEach(function(trig) {
-      trig.addEventListener('click', function() {
-        var item = trig.parentNode;
-        if (!item) return;
-        var wasOpen = item.classList.contains('open');
-        closeActivePillDropdown();
-        settingsDrawer.querySelectorAll('.mobile-acc-item').forEach(function(other) {
-          other.classList.remove('open');
-        });
-        if (!wasOpen) item.classList.add('open');
+    var navItems = settingsDrawer.querySelectorAll('.mobile-nav-item');
+    navItems.forEach(function(item) {
+      item.addEventListener('click', function() {
+        var subpageId = item.getAttribute('data-subpage');
+        var title = item.getAttribute('data-title');
+        if (subpageId) openMobileSubpage(subpageId, title);
       });
     });
   }
 
+  if (drawerBackBtn) {
+    drawerBackBtn.addEventListener('click', function() {
+      if (activeMobileSubpage) {
+        showMobileMainPage();
+      } else {
+        closeSettings();
+      }
+    });
+  }
+
   window.addEventListener('resize', function() {
-    if (!isMobileViewport() && isMobilePanelsMounted) {
-      closeActivePillDropdown();
-      restoreDesktopControlPanels();
+    if (!isMobileViewport() && activeMobileSubpage) {
+      showMobileMainPage();
     }
   });
 
   function openSettings() {
     closeAllPopovers();
-    mountMobileControlPanels();
+    showMobileMainPage();
     if (settingsDrawer) settingsDrawer.classList.add('open');
     if (modalOverlay) modalOverlay.classList.add('open');
   }
 
   function closeSettings() {
-    closeActivePillDropdown();
-    restoreDesktopControlPanels();
+    showMobileMainPage();
     if (settingsDrawer) settingsDrawer.classList.remove('open');
     if (!noteModal || !noteModal.classList.contains('open')) {
       if (modalOverlay) modalOverlay.classList.remove('open');

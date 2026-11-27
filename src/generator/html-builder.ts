@@ -332,50 +332,38 @@ export class HtmlBuilder {
   </main>
 
   <!-- Settings drawer -->
-  <div id="settingsDrawer" class="settings-drawer">
+  <div id="settingsDrawer" class="settings-drawer" data-mobile-page="main">
     <div class="drawer-header">
-      <span class="drawer-title">Settings</span>
+      <div class="drawer-header-left">
+        <button id="drawerBackBtn" class="drawer-back-btn" type="button" aria-label="Back">${renderIconSvg('arrow-left')}</button>
+        <span id="drawerTitle" class="drawer-title">Settings</span>
+      </div>
       <button id="drawerCloseBtn" class="drawer-close-btn">${renderIconSvg('x')}</button>
     </div>
-    <div class="drawer-body">
+    <div id="drawerBodyMain" class="drawer-body">
       <div id="mobileViewDataSection" class="settings-section mobile-only-section">
         <div class="settings-section-title">View &amp; Data</div>
-        <div class="mobile-settings-accordion">
-          <div class="mobile-acc-item" data-acc="filter">
-            <button type="button" class="mobile-acc-trigger">
-              <span class="mobile-acc-label">${renderIconSvg('filter', 'b2h-icon-sm')} <span>Filter</span> <span id="mobileFilterBadge" class="toolbar-btn-badge" style="display:none;">0</span></span>
-              ${renderIconSvg('chevron-down', 'b2h-icon-sm mobile-acc-chevron')}
-            </button>
-            <div class="mobile-acc-panel" id="mobileFilterHost"></div>
-          </div>
-          <div class="mobile-acc-item" data-acc="group">
-            <button type="button" class="mobile-acc-trigger">
-              <span class="mobile-acc-label">${renderIconSvg('group', 'b2h-icon-sm')} <span>Group</span></span>
-              ${renderIconSvg('chevron-down', 'b2h-icon-sm mobile-acc-chevron')}
-            </button>
-            <div class="mobile-acc-panel" id="mobileGroupHost"></div>
-          </div>
-          <div class="mobile-acc-item" data-acc="sort">
-            <button type="button" class="mobile-acc-trigger">
-              <span class="mobile-acc-label">${renderIconSvg('sort', 'b2h-icon-sm')} <span>Sort</span> <span id="mobileSortBadge" class="toolbar-btn-badge" style="display:none;">0</span></span>
-              ${renderIconSvg('chevron-down', 'b2h-icon-sm mobile-acc-chevron')}
-            </button>
-            <div class="mobile-acc-panel" id="mobileSortHost"></div>
-          </div>
-          <div class="mobile-acc-item" data-acc="properties">
-            <button type="button" class="mobile-acc-trigger">
-              <span class="mobile-acc-label">${renderIconSvg('properties', 'b2h-icon-sm')} <span>Properties</span></span>
-              ${renderIconSvg('chevron-down', 'b2h-icon-sm mobile-acc-chevron')}
-            </button>
-            <div class="mobile-acc-panel" id="mobilePropertiesHost"></div>
-          </div>
-          <div class="mobile-acc-item" data-acc="results">
-            <button type="button" class="mobile-acc-trigger">
-              <span class="mobile-acc-label">${renderIconSvg('hash', 'b2h-icon-sm')} <span>Results</span> <span id="mobileResultsCountHint" class="mobile-acc-hint"></span></span>
-              ${renderIconSvg('chevron-down', 'b2h-icon-sm mobile-acc-chevron')}
-            </button>
-            <div class="mobile-acc-panel" id="mobileResultsHost"></div>
-          </div>
+        <div class="mobile-nav-list">
+          <button type="button" class="mobile-nav-item" data-subpage="filter" data-title="Filter">
+            <span class="mobile-nav-left">${renderIconSvg('filter', 'b2h-icon-sm')} <span>Filter</span></span>
+            <span class="mobile-nav-right"><span id="mobileFilterBadge" class="toolbar-btn-badge" style="display:none;">0</span>${renderIconSvg('chevron-right', 'b2h-icon-sm mobile-nav-chevron')}</span>
+          </button>
+          <button type="button" class="mobile-nav-item" data-subpage="group" data-title="Group">
+            <span class="mobile-nav-left">${renderIconSvg('group', 'b2h-icon-sm')} <span>Group</span></span>
+            <span class="mobile-nav-right">${renderIconSvg('chevron-right', 'b2h-icon-sm mobile-nav-chevron')}</span>
+          </button>
+          <button type="button" class="mobile-nav-item" data-subpage="sort" data-title="Sort">
+            <span class="mobile-nav-left">${renderIconSvg('sort', 'b2h-icon-sm')} <span>Sort</span></span>
+            <span class="mobile-nav-right"><span id="mobileSortBadge" class="toolbar-btn-badge" style="display:none;">0</span>${renderIconSvg('chevron-right', 'b2h-icon-sm mobile-nav-chevron')}</span>
+          </button>
+          <button type="button" class="mobile-nav-item" data-subpage="properties" data-title="Properties">
+            <span class="mobile-nav-left">${renderIconSvg('properties', 'b2h-icon-sm')} <span>Properties</span></span>
+            <span class="mobile-nav-right">${renderIconSvg('chevron-right', 'b2h-icon-sm mobile-nav-chevron')}</span>
+          </button>
+          <button type="button" class="mobile-nav-item" data-subpage="results" data-title="Results">
+            <span class="mobile-nav-left">${renderIconSvg('hash', 'b2h-icon-sm')} <span>Results</span></span>
+            <span class="mobile-nav-right"><span id="mobileResultsCountHint" class="mobile-acc-hint"></span>${renderIconSvg('chevron-right', 'b2h-icon-sm mobile-nav-chevron')}</span>
+          </button>
         </div>
       </div>
 
@@ -410,6 +398,11 @@ export class HtmlBuilder {
           </select>
         </div>
       </div>
+    </div>
+
+    <div id="mobileSubpageView" class="drawer-body mobile-subpage-body" style="display: none;">
+      <div id="mobileSubpageDesc" class="mobile-subpage-desc" style="display: none;"></div>
+      <div id="mobileSubpageHost" class="mobile-subpage-host"></div>
     </div>
   </div>
 
