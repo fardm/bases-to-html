@@ -338,33 +338,77 @@ export class HtmlBuilder {
       <button id="drawerCloseBtn" class="drawer-close-btn">${renderIconSvg('x')}</button>
     </div>
     <div class="drawer-body">
-      <div class="setting-row">
-        <span class="setting-label">Theme</span>
-        <span class="setting-desc">Switch between light and dark display</span>
-        <div class="theme-toggle-group">
-          <button id="themeLightBtn" class="theme-toggle-btn">${renderIconSvg('sun', 'b2h-icon-sm')} Light</button>
-          <button id="themeDarkBtn" class="theme-toggle-btn active">${renderIconSvg('moon', 'b2h-icon-sm')} Dark</button>
+      <div id="mobileViewDataSection" class="settings-section mobile-only-section">
+        <div class="settings-section-title">View &amp; Data</div>
+        <div class="mobile-settings-accordion">
+          <div class="mobile-acc-item" data-acc="filter">
+            <button type="button" class="mobile-acc-trigger">
+              <span class="mobile-acc-label">${renderIconSvg('filter', 'b2h-icon-sm')} <span>Filter</span> <span id="mobileFilterBadge" class="toolbar-btn-badge" style="display:none;">0</span></span>
+              ${renderIconSvg('chevron-down', 'b2h-icon-sm mobile-acc-chevron')}
+            </button>
+            <div class="mobile-acc-panel" id="mobileFilterHost"></div>
+          </div>
+          <div class="mobile-acc-item" data-acc="group">
+            <button type="button" class="mobile-acc-trigger">
+              <span class="mobile-acc-label">${renderIconSvg('group', 'b2h-icon-sm')} <span>Group</span></span>
+              ${renderIconSvg('chevron-down', 'b2h-icon-sm mobile-acc-chevron')}
+            </button>
+            <div class="mobile-acc-panel" id="mobileGroupHost"></div>
+          </div>
+          <div class="mobile-acc-item" data-acc="sort">
+            <button type="button" class="mobile-acc-trigger">
+              <span class="mobile-acc-label">${renderIconSvg('sort', 'b2h-icon-sm')} <span>Sort</span> <span id="mobileSortBadge" class="toolbar-btn-badge" style="display:none;">0</span></span>
+              ${renderIconSvg('chevron-down', 'b2h-icon-sm mobile-acc-chevron')}
+            </button>
+            <div class="mobile-acc-panel" id="mobileSortHost"></div>
+          </div>
+          <div class="mobile-acc-item" data-acc="properties">
+            <button type="button" class="mobile-acc-trigger">
+              <span class="mobile-acc-label">${renderIconSvg('properties', 'b2h-icon-sm')} <span>Properties</span></span>
+              ${renderIconSvg('chevron-down', 'b2h-icon-sm mobile-acc-chevron')}
+            </button>
+            <div class="mobile-acc-panel" id="mobilePropertiesHost"></div>
+          </div>
+          <div class="mobile-acc-item" data-acc="results">
+            <button type="button" class="mobile-acc-trigger">
+              <span class="mobile-acc-label">${renderIconSvg('hash', 'b2h-icon-sm')} <span>Results</span> <span id="mobileResultsCountHint" class="mobile-acc-hint"></span></span>
+              ${renderIconSvg('chevron-down', 'b2h-icon-sm mobile-acc-chevron')}
+            </button>
+            <div class="mobile-acc-panel" id="mobileResultsHost"></div>
+          </div>
         </div>
       </div>
 
-      <div class="setting-row">
-        <span class="setting-label">Page width</span>
-        <span class="setting-desc">Adjust the reading width</span>
-        <div class="width-toggle-group">
-          <button id="widthNarrowBtn" class="width-toggle-btn">Narrow</button>
-          <button id="widthNormalBtn" class="width-toggle-btn active">Normal</button>
-          <button id="widthFullBtn" class="width-toggle-btn">Full</button>
+      <div class="settings-section">
+        <div class="settings-section-title mobile-only-section-title">Appearance</div>
+        <div class="setting-row">
+          <span class="setting-label">Theme</span>
+          <span class="setting-desc">Switch between light and dark display</span>
+          <div class="theme-toggle-group">
+            <button id="themeLightBtn" class="theme-toggle-btn">${renderIconSvg('sun', 'b2h-icon-sm')} Light</button>
+            <button id="themeDarkBtn" class="theme-toggle-btn active">${renderIconSvg('moon', 'b2h-icon-sm')} Dark</button>
+          </div>
         </div>
-      </div>
 
-      <div class="setting-row">
-        <span class="setting-label">Font</span>
-        <span class="setting-desc">Select typography style</span>
-        <select id="fontSelect" class="font-select">
-          ${fontInfo.attrValue === 'custom' ? `<option value="custom">${escapeHtml(fontInfo.label)} (Exported)</option>` : ''}
-          <option value="system-sans">System Sans-Serif</option>
-          <option value="system-serif">System Serif</option>
-        </select>
+        <div class="setting-row setting-row-width">
+          <span class="setting-label">Page width</span>
+          <span class="setting-desc">Adjust the reading width</span>
+          <div class="width-toggle-group">
+            <button id="widthNarrowBtn" class="width-toggle-btn">Narrow</button>
+            <button id="widthNormalBtn" class="width-toggle-btn active">Normal</button>
+            <button id="widthFullBtn" class="width-toggle-btn">Full</button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-label">Font</span>
+          <span class="setting-desc">Select typography style</span>
+          <select id="fontSelect" class="font-select">
+            ${fontInfo.attrValue === 'custom' ? `<option value="custom">${escapeHtml(fontInfo.label)} (Exported)</option>` : ''}
+            <option value="system-sans">System Sans-Serif</option>
+            <option value="system-serif">System Serif</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>

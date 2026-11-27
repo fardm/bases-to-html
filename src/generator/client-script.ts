@@ -167,6 +167,15 @@ export function getClientScript(): string {
   var settingsBtn = document.getElementById('settingsBtn');
   var settingsDrawer = document.getElementById('settingsDrawer');
   var drawerCloseBtn = document.getElementById('drawerCloseBtn');
+  var mobileFilterHost = document.getElementById('mobileFilterHost');
+  var mobileGroupHost = document.getElementById('mobileGroupHost');
+  var mobileSortHost = document.getElementById('mobileSortHost');
+  var mobilePropertiesHost = document.getElementById('mobilePropertiesHost');
+  var mobileResultsHost = document.getElementById('mobileResultsHost');
+  var mobileFilterBadge = document.getElementById('mobileFilterBadge');
+  var mobileSortBadge = document.getElementById('mobileSortBadge');
+  var mobileResultsCountHint = document.getElementById('mobileResultsCountHint');
+  var resultsLimitControls = resultsLimitPopover ? resultsLimitPopover.querySelector('.results-limit-controls') : null;
   var modalOverlay = document.getElementById('modalOverlay');
   var themeLightBtn = document.getElementById('themeLightBtn');
   var themeDarkBtn = document.getElementById('themeDarkBtn');
@@ -381,6 +390,14 @@ export function getClientScript(): string {
           sortCountBadge.style.display = 'none';
         }
       }
+      if (mobileSortBadge) {
+        if (hasSorts) {
+          mobileSortBadge.textContent = String(activeSortRules.length);
+          mobileSortBadge.style.display = 'inline-block';
+        } else {
+          mobileSortBadge.style.display = 'none';
+        }
+      }
     }
 
     if (groupToggleBtn) {
@@ -400,6 +417,14 @@ export function getClientScript(): string {
           filterCountBadge.style.display = 'inline-block';
         } else {
           filterCountBadge.style.display = 'none';
+        }
+      }
+      if (mobileFilterBadge) {
+        if (hasFilters) {
+          mobileFilterBadge.textContent = String(filterCount);
+          mobileFilterBadge.style.display = 'inline-block';
+        } else {
+          mobileFilterBadge.style.display = 'none';
         }
       }
     }
@@ -1428,8 +1453,15 @@ export function getClientScript(): string {
 
       if (typeof trigger.getBoundingClientRect === 'function') {
         var rect = trigger.getBoundingClientRect();
-        menu.style.top = (rect.bottom + 4) + 'px';
-        menu.style.left = rect.left + 'px';
+        var vw = window.innerWidth || document.documentElement.clientWidth || 1024;
+        var vh = window.innerHeight || document.documentElement.clientHeight || 768;
+        var clampedLeft = Math.max(8, Math.min(rect.left, vw - 220));
+        var topPos = rect.bottom + 4;
+        if (topPos + 240 > vh && rect.top > 240) {
+          topPos = Math.max(8, rect.top - 240);
+        }
+        menu.style.top = topPos + 'px';
+        menu.style.left = clampedLeft + 'px';
       }
 
       if (document.body && document.body.appendChild) {
@@ -2096,8 +2128,12 @@ export function getClientScript(): string {
       filtered = filtered.slice(0, activeResultLimit);
     }
 
+    var countLabel = filtered.length + ' result' + (filtered.length === 1 ? '' : 's');
     if (resultsCountText) {
-      resultsCountText.textContent = filtered.length + ' result' + (filtered.length === 1 ? '' : 's');
+      resultsCountText.textContent = countLabel;
+    }
+    if (mobileResultsCountHint) {
+      mobileResultsCountHint.textContent = countLabel;
     }
 
     contentContainer.innerHTML = '';
@@ -3231,13 +3267,78 @@ export function getClientScript(): string {
     }
   }
 
+  var isMobilePanelsMounted = false;
+
+  function isMobileViewport() {
+    return (window.innerWidth || document.documentElement.clientWidth || 1024) <= 768;
+  }
+
+  function mountMobileControlPanels() {
+    if (isMobilePanelsMounted || !isMobileViewport()) return;
+    if (mobileFilterHost && filterRulesList) mobileFilterHost.appendChild(filterRulesList);
+    if (mobileGroupHost && groupRulesList) {
+      mobileGroupHost.appendChild(groupRulesList);
+      if (addGroupBtn) mobileGroupHost.appendChild(addGroupBtn);
+    }
+    if (mobileSortHost && sortRulesList) {
+      mobileSortHost.appendChild(sortRulesList);
+      if (addSortBtn) mobileSortHost.appendChild(addSortBtn);
+    }
+    if (mobilePropertiesHost && propertiesList) mobilePropertiesHost.appendChild(propertiesList);
+    if (mobileResultsHost && resultsLimitControls) mobileResultsHost.appendChild(resultsLimitControls);
+    isMobilePanelsMounted = true;
+  }
+
+  function restoreDesktopControlPanels() {
+    if (!isMobilePanelsMounted) return;
+    if (filterPopover && filterRulesList) filterPopover.appendChild(filterRulesList);
+    if (groupPopover && groupRulesList) {
+      groupPopover.appendChild(groupRulesList);
+      if (addGroupBtn) groupPopover.appendChild(addGroupBtn);
+    }
+    if (sortPopover && sortRulesList) {
+      sortPopover.appendChild(sortRulesList);
+      if (addSortBtn) sortPopover.appendChild(addSortBtn);
+    }
+    if (propertiesPopover && propertiesList) propertiesPopover.appendChild(propertiesList);
+    if (resultsLimitPopover && resultsLimitControls) resultsLimitPopover.appendChild(resultsLimitControls);
+    isMobilePanelsMounted = false;
+  }
+
+  // Accordion toggles inside mobile Settings panel
+  if (settingsDrawer) {
+    var accTriggers = settingsDrawer.querySelectorAll('.mobile-acc-trigger');
+    accTriggers.forEach(function(trig) {
+      trig.addEventListener('click', function() {
+        var item = trig.parentNode;
+        if (!item) return;
+        var wasOpen = item.classList.contains('open');
+        closeActivePillDropdown();
+        settingsDrawer.querySelectorAll('.mobile-acc-item').forEach(function(other) {
+          other.classList.remove('open');
+        });
+        if (!wasOpen) item.classList.add('open');
+      });
+    });
+  }
+
+  window.addEventListener('resize', function() {
+    if (!isMobileViewport() && isMobilePanelsMounted) {
+      closeActivePillDropdown();
+      restoreDesktopControlPanels();
+    }
+  });
+
   function openSettings() {
     closeAllPopovers();
+    mountMobileControlPanels();
     if (settingsDrawer) settingsDrawer.classList.add('open');
     if (modalOverlay) modalOverlay.classList.add('open');
   }
 
   function closeSettings() {
+    closeActivePillDropdown();
+    restoreDesktopControlPanels();
     if (settingsDrawer) settingsDrawer.classList.remove('open');
     if (!noteModal || !noteModal.classList.contains('open')) {
       if (modalOverlay) modalOverlay.classList.remove('open');
