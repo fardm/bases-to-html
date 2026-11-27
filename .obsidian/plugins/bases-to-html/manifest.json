@@ -1,9 +1,9 @@
 {
 	"id": "bases-to-html",
 	"name": "Bases to HTML",
-	"version": "1.1.1",
+	"version": "1.2.0",
 	"minAppVersion": "1.4.0",
-	"description": "Export Bases views to standalone, interactive, and responsive HTML pages for static hosting.",
+	"description": "Transform Bases into interactive, responsive, standalone HTML pages.",
 	"author": "iFard",
 	"authorUrl": "https://github.com/fardm",
 	"fundingUrl": "",

@@ -57,6 +57,13 @@ main[data-view-name="👁️ oveview"] {
         gap: 2rem;
     }
 
+    @media (max-width: 768px) {
+      .bases-view-container {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1rem;
+      }
+  }
+
     .bases-table-group-section,
     .bases-table-wrapper {
         margin: 0;

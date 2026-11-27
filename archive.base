@@ -75,7 +75,7 @@ views:
     imageAspectRatio: 1.5
     imageFit: ""
   - type: table
-    name: Table
+    name: 📄 Table
     filters:
       and:
         - "!file.tags.isEmpty()"
