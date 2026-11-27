@@ -1805,6 +1805,63 @@ body {
     flex-wrap: wrap;
     min-height: 36px;
   }
+  .mobile-subpage-host .filter-group-box .popover-rule-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.65rem 0.75rem;
+    gap: 0.4rem;
+  }
+  .mobile-subpage-host .filter-group-box .popover-rule-pill {
+    display: contents;
+  }
+  .mobile-subpage-host .filter-group-box .pill-icon {
+    order: 1;
+  }
+  .mobile-subpage-host .filter-group-box .pill-select-wrapper {
+    order: 2;
+  }
+  .mobile-subpage-host .filter-group-box .pill-select-wrapper + .pill-divider + .pill-select-wrapper {
+    order: 3;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.05rem 0.2rem;
+  }
+  .mobile-subpage-host .filter-group-box .pill-divider {
+    display: none;
+  }
+  .mobile-subpage-host .filter-group-box .filter-conjunction-btn {
+    order: 4;
+    margin-left: auto;
+    min-width: auto;
+    padding: 0.15rem 0.4rem;
+    font-size: 0.78rem;
+  }
+  .mobile-subpage-host .filter-group-box .popover-rule-delete {
+    order: 5;
+    padding: 0.25rem;
+  }
+  .mobile-subpage-host .filter-group-box .pill-input {
+    order: 6;
+    flex: 1 0 100%;
+    width: 100%;
+    border-top: 1px solid var(--border-color);
+    padding: 0.55rem 0.15rem 0.1rem;
+    margin-top: 0.2rem;
+    font-size: 0.9rem;
+  }
+  .mobile-subpage-host .filter-group-box .filter-expression-pill {
+    order: 6;
+    flex: 1 0 100%;
+    width: 100%;
+    border-top: 1px solid var(--border-color);
+    padding: 0.5rem 0.15rem 0.1rem;
+    margin-top: 0.15rem;
+  }
   .mobile-subpage-host .property-visibility-row {
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-color);
