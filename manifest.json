@@ -1,7 +1,7 @@
 {
 	"id": "bases-to-html",
 	"name": "Bases to HTML",
-	"version": "1.2.1",
+	"version": "1.2.0",
 	"minAppVersion": "1.4.0",
 	"description": "Transform Bases into interactive, responsive, standalone HTML pages.",
 	"author": "iFard",
