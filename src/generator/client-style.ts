@@ -880,6 +880,113 @@ body {
   transform: rotate(45deg);
 }
 
+/* Manual Grouping Panel */
+.manual-groups-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.manual-groups-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.manual-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.manual-group-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  transition: background-color var(--transition-fast);
+}
+
+.manual-group-row:hover {
+  background-color: var(--bg-pill-hover);
+}
+
+.manual-group-row.dragging {
+  opacity: 0.45;
+}
+
+.manual-group-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.manual-group-row.is-disabled .manual-group-label {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.manual-group-add-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.manual-group-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.825rem;
+  font-family: inherit;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+.manual-group-input:focus {
+  border-color: var(--border-focus);
+  background-color: var(--bg-secondary);
+}
+
+.manual-group-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.825rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
+}
+
+.manual-group-add-btn:hover {
+  background-color: var(--bg-pill-hover);
+}
+
 /* ========================================================================= */
 /* Main Layout & Cards                                                       */
 /* ========================================================================= */

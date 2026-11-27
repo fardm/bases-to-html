@@ -29,7 +29,7 @@ export interface BaseSortConfig {
 
 export interface BaseGroupConfig {
 	property: string;
-	direction?: 'ASC' | 'DESC' | 'asc' | 'desc';
+	direction?: 'ASC' | 'DESC' | 'MANUAL' | 'asc' | 'desc' | 'manual';
 }
 
 export interface BaseFilterGroup {

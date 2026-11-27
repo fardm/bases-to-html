@@ -1293,6 +1293,10 @@ export function getClientScript(): string {
 
     propSelect.addEventListener('change', function(e) {
       activeGroupRule.property = e.target.value;
+      activeGroupRule.manualGroups = undefined;
+      if ((activeGroupRule.direction || '').toUpperCase() === 'MANUAL') {
+        syncManualGroupsForProperty(activeGroupRule);
+      }
       saveGroupState();
       renderGroupPopover();
       renderCards();
@@ -1303,26 +1307,37 @@ export function getClientScript(): string {
     divider.className = 'pill-divider';
     pill.appendChild(divider);
 
-    // Direction Select
+    // Direction Select (A-Z, Z-A, Manual)
     var dirSelect = document.createElement('select');
     dirSelect.className = 'pill-select';
     var dirLabels = getDirectionLabels(activeGroupRule.property);
-
-    var optDesc = document.createElement('option');
-    optDesc.value = 'DESC';
-    optDesc.textContent = dirLabels.desc + ' ↕';
-    if (activeGroupRule.direction === 'DESC') optDesc.selected = true;
-    dirSelect.appendChild(optDesc);
+    var curDir = (activeGroupRule.direction || 'DESC').toUpperCase();
 
     var optAsc = document.createElement('option');
     optAsc.value = 'ASC';
     optAsc.textContent = dirLabels.asc + ' ↕';
-    if (activeGroupRule.direction === 'ASC') optAsc.selected = true;
+    if (curDir === 'ASC') optAsc.selected = true;
     dirSelect.appendChild(optAsc);
+
+    var optDesc = document.createElement('option');
+    optDesc.value = 'DESC';
+    optDesc.textContent = dirLabels.desc + ' ↕';
+    if (curDir === 'DESC') optDesc.selected = true;
+    dirSelect.appendChild(optDesc);
+
+    var optManual = document.createElement('option');
+    optManual.value = 'MANUAL';
+    optManual.textContent = 'Manual';
+    if (curDir === 'MANUAL') optManual.selected = true;
+    dirSelect.appendChild(optManual);
 
     dirSelect.addEventListener('change', function(e) {
       activeGroupRule.direction = e.target.value;
+      if (activeGroupRule.direction === 'MANUAL') {
+        syncManualGroupsForProperty(activeGroupRule);
+      }
       saveGroupState();
+      renderGroupPopover();
       renderCards();
     });
     pill.appendChild(dirSelect);
@@ -1343,7 +1358,196 @@ export function getClientScript(): string {
     row.appendChild(delBtn);
 
     groupRulesList.appendChild(row);
+
+    // Manual Grouping Manager
+    if (curDir === 'MANUAL') {
+      syncManualGroupsForProperty(activeGroupRule);
+
+      var manualPanel = document.createElement('div');
+      manualPanel.className = 'manual-groups-panel';
+
+      var manualHeader = document.createElement('div');
+      manualHeader.className = 'manual-groups-header';
+      manualHeader.textContent = 'Groups (drag to reorder)';
+      manualPanel.appendChild(manualHeader);
+
+      var manualList = document.createElement('div');
+      manualList.className = 'manual-groups-list popover-rules-list';
+
+      (activeGroupRule.manualGroups || []).forEach(function(entry, idx) {
+        var grpRow = document.createElement('div');
+        grpRow.className = 'manual-group-row' + (entry.enabled === false ? ' is-disabled' : '');
+        grpRow.setAttribute('draggable', 'true');
+
+        var handle = document.createElement('span');
+        handle.className = 'drag-handle';
+        handle.title = 'Drag to reorder';
+        handle.appendChild(createIconSvg('grip-vertical', 'b2h-icon-xs'));
+        grpRow.appendChild(handle);
+
+        var chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.className = 'property-visibility-toggle';
+        chk.checked = entry.enabled !== false;
+        chk.addEventListener('change', function() {
+          entry.enabled = chk.checked;
+          saveGroupState();
+          renderGroupPopover();
+          renderCards();
+        });
+        grpRow.appendChild(chk);
+
+        var lbl = document.createElement('span');
+        lbl.className = 'manual-group-label';
+        lbl.textContent = entry.key;
+        lbl.title = entry.key;
+        lbl.addEventListener('click', function() {
+          chk.checked = !chk.checked;
+          entry.enabled = chk.checked;
+          saveGroupState();
+          renderGroupPopover();
+          renderCards();
+        });
+        grpRow.appendChild(lbl);
+
+        if (entry.custom) {
+          var removeCustomBtn = document.createElement('button');
+          removeCustomBtn.type = 'button';
+          removeCustomBtn.className = 'popover-rule-delete';
+          removeCustomBtn.title = 'Remove custom group';
+          removeCustomBtn.appendChild(createIconSvg('trash', 'b2h-icon-xs'));
+          removeCustomBtn.addEventListener('click', function() {
+            activeGroupRule.manualGroups.splice(idx, 1);
+            saveGroupState();
+            renderGroupPopover();
+            renderCards();
+          });
+          grpRow.appendChild(removeCustomBtn);
+        }
+
+        setupDragDrop(grpRow, idx, activeGroupRule.manualGroups, function() {
+          saveGroupState();
+          renderGroupPopover();
+          renderCards();
+        });
+
+        manualList.appendChild(grpRow);
+      });
+
+      manualPanel.appendChild(manualList);
+
+      var addRow = document.createElement('div');
+      addRow.className = 'manual-group-add-row';
+
+      var addInput = document.createElement('input');
+      addInput.type = 'text';
+      addInput.className = 'manual-group-input';
+      addInput.placeholder = 'New group name...';
+
+      var addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'manual-group-add-btn';
+      addBtn.appendChild(createIconSvg('plus', 'b2h-icon-xs'));
+      addBtn.appendChild(document.createTextNode(' Add'));
+
+      var addCustomGroup = function() {
+        var name = addInput.value.trim();
+        if (!name) return;
+        var existing = null;
+        (activeGroupRule.manualGroups || []).forEach(function(g) {
+          if (g.key === name) existing = g;
+        });
+        if (existing) {
+          existing.enabled = true;
+        } else {
+          activeGroupRule.manualGroups.push({ key: name, enabled: true, custom: true });
+        }
+        addInput.value = '';
+        saveGroupState();
+        renderGroupPopover();
+        renderCards();
+      };
+
+      addBtn.addEventListener('click', addCustomGroup);
+      addInput.addEventListener('keydown', function(ev) {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          addCustomGroup();
+        }
+      });
+
+      addRow.appendChild(addInput);
+      addRow.appendChild(addBtn);
+      manualPanel.appendChild(addRow);
+
+      groupRulesList.appendChild(manualPanel);
+    }
+
     updateToolbarActiveStates();
+  }
+
+  function getGroupKeyForItem(it, groupProp) {
+    var keyVal = getItemValue(it, groupProp);
+    var isValEmpty = keyVal === undefined || keyVal === null || keyVal === '' || (Array.isArray(keyVal) && keyVal.length === 0);
+    return isValEmpty ? 'Uncategorized' : (Array.isArray(keyVal) ? keyVal.join(', ') : String(keyVal));
+  }
+
+  function syncManualGroupsForProperty(rule) {
+    if (!rule || !rule.property) return;
+    if (!Array.isArray(rule.manualGroups)) {
+      rule.manualGroups = [];
+    }
+    var seen = new Set();
+    rule.manualGroups.forEach(function(g) {
+      if (g && g.key !== undefined) seen.add(g.key);
+    });
+    var discovered = [];
+    items.forEach(function(it) {
+      var k = getGroupKeyForItem(it, rule.property);
+      if (!seen.has(k)) {
+        seen.add(k);
+        discovered.push(k);
+      }
+    });
+    discovered.sort(function(a, b) {
+      if (a === 'Uncategorized') return 1;
+      if (b === 'Uncategorized') return -1;
+      return compareValuesClient(a, b, true);
+    });
+    discovered.forEach(function(k) {
+      rule.manualGroups.push({ key: k, enabled: true });
+    });
+  }
+
+  function groupItemsByRule(itemsList) {
+    var groupProp = activeGroupRule.property;
+    var dir = (activeGroupRule.direction || 'DESC').toUpperCase();
+    var groups = new Map();
+    itemsList.forEach(function(it) {
+      var keyStr = getGroupKeyForItem(it, groupProp);
+      if (!groups.has(keyStr)) groups.set(keyStr, []);
+      groups.get(keyStr).push(it);
+    });
+
+    var sortedKeys;
+    if (dir === 'MANUAL') {
+      syncManualGroupsForProperty(activeGroupRule);
+      sortedKeys = [];
+      (activeGroupRule.manualGroups || []).forEach(function(entry) {
+        if (entry && entry.enabled !== false && groups.has(entry.key)) {
+          sortedKeys.push(entry.key);
+        }
+      });
+    } else {
+      var isGroupAsc = dir === 'ASC';
+      sortedKeys = Array.from(groups.keys()).sort(function(a, b) {
+        if (a === 'Uncategorized') return 1;
+        if (b === 'Uncategorized') return -1;
+        return compareValuesClient(a, b, isGroupAsc);
+      });
+    }
+
+    return { groups: groups, sortedKeys: sortedKeys };
   }
 
   function normalizeOperatorAlias(op, pType) {
@@ -2164,23 +2368,9 @@ export function getClientScript(): string {
   function renderGalleryCards(contentContainer, filtered, view) {
     // Grouping
     if (activeGroupRule && activeGroupRule.property) {
-      var groupProp = activeGroupRule.property;
-      var isGroupAsc = activeGroupRule.direction.toUpperCase() === 'ASC';
-
-      var groups = new Map();
-      filtered.forEach(function(it) {
-        var keyVal = getItemValue(it, groupProp);
-        var isValEmpty = keyVal === undefined || keyVal === null || keyVal === '' || (Array.isArray(keyVal) && keyVal.length === 0);
-        var keyStr = isValEmpty ? 'Uncategorized' : (Array.isArray(keyVal) ? keyVal.join(', ') : String(keyVal));
-        if (!groups.has(keyStr)) groups.set(keyStr, []);
-        groups.get(keyStr).push(it);
-      });
-
-      var sortedKeys = Array.from(groups.keys()).sort(function(a, b) {
-        if (a === 'Uncategorized') return 1;
-        if (b === 'Uncategorized') return -1;
-        return compareValuesClient(a, b, isGroupAsc);
-      });
+      var grouped = groupItemsByRule(filtered);
+      var groups = grouped.groups;
+      var sortedKeys = grouped.sortedKeys;
 
       sortedKeys.forEach(function(grpKey) {
         var grpItems = groups.get(grpKey);
@@ -2225,23 +2415,9 @@ export function getClientScript(): string {
     var colSizes = view.columnSize || {};
 
     if (activeGroupRule && activeGroupRule.property) {
-      var groupProp = activeGroupRule.property;
-      var isGroupAsc = activeGroupRule.direction.toUpperCase() === 'ASC';
-
-      var groups = new Map();
-      itemsList.forEach(function(it) {
-        var keyVal = getItemValue(it, groupProp);
-        var isValEmpty = keyVal === undefined || keyVal === null || keyVal === '' || (Array.isArray(keyVal) && keyVal.length === 0);
-        var keyStr = isValEmpty ? 'Uncategorized' : (Array.isArray(keyVal) ? keyVal.join(', ') : String(keyVal));
-        if (!groups.has(keyStr)) groups.set(keyStr, []);
-        groups.get(keyStr).push(it);
-      });
-
-      var sortedKeys = Array.from(groups.keys()).sort(function(a, b) {
-        if (a === 'Uncategorized') return 1;
-        if (b === 'Uncategorized') return -1;
-        return compareValuesClient(a, b, isGroupAsc);
-      });
+      var grouped = groupItemsByRule(itemsList);
+      var groups = grouped.groups;
+      var sortedKeys = grouped.sortedKeys;
 
       sortedKeys.forEach(function(grpKey) {
         var grpItems = groups.get(grpKey);
