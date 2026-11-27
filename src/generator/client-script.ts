@@ -568,8 +568,14 @@ export function getClientScript(): string {
     // 5. Result limit state
     var savedLimit = localStorage.getItem(storagePrefix + viewKey + '_limit');
     if (savedLimit !== null) {
-      var parsedLimit = parseInt(savedLimit, 10);
-      activeResultLimit = (!isNaN(parsedLimit) && parsedLimit > 0) ? parsedLimit : null;
+      if (savedLimit === 'none') {
+        activeResultLimit = null;
+      } else {
+        var parsedLimit = parseInt(savedLimit, 10);
+        activeResultLimit = (!isNaN(parsedLimit) && parsedLimit > 0) ? parsedLimit : null;
+      }
+    } else if (typeof view.limit === 'number' && view.limit > 0) {
+      activeResultLimit = Math.floor(view.limit);
     } else {
       activeResultLimit = null;
     }
@@ -987,7 +993,7 @@ export function getClientScript(): string {
     if (activeResultLimit !== null && activeResultLimit > 0) {
       localStorage.setItem(storagePrefix + getViewStorageKey() + '_limit', String(activeResultLimit));
     } else {
-      localStorage.removeItem(storagePrefix + getViewStorageKey() + '_limit');
+      localStorage.setItem(storagePrefix + getViewStorageKey() + '_limit', 'none');
     }
     updateToolbarActiveStates();
   }

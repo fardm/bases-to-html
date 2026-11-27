@@ -66,6 +66,7 @@ export interface BaseViewConfig {
 	groupBy?: BaseGroupConfig;
 	order?: string[];
 	sort?: BaseSortConfig[];
+	limit?: number;
 	image?: string;
 	cardSize?: number;
 	imageAspectRatio?: number;

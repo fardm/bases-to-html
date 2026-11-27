@@ -31,6 +31,7 @@ function computeViewSignature(v: Record<string, unknown>): string {
 		JSON.stringify(v.groupBy ?? ''),
 		JSON.stringify(v.sort ?? ''),
 		JSON.stringify(v.order ?? ''),
+		typeof v.limit === 'number' ? v.limit : '',
 		typeof v.image === 'string' ? v.image : '',
 		typeof v.cardSize === 'number' ? v.cardSize : '',
 		typeof v.imageAspectRatio === 'number' ? v.imageAspectRatio : '',
@@ -120,6 +121,7 @@ export function parseBaseFile(content: string, filePath: string): BaseFileConfig
 								isRecord(x) && typeof x.property === 'string',
 						)
 					: undefined,
+				limit: typeof v.limit === 'number' && v.limit > 0 ? Math.floor(v.limit) : undefined,
 				image: typeof v.image === 'string' ? v.image : '',
 				cardSize: typeof v.cardSize === 'number' ? v.cardSize : 180,
 				imageAspectRatio:
